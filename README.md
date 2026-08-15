@@ -1,3 +1,5 @@
+**Languages:** [English](README.md) | [简体中文](README.zh.md)
+
 # Sertum
 
 **Sertum** (花环播放器) is a fully offline, local-first music player for Android, built for listeners who keep their own audio library and want unaltered, bit-perfect playback through USB DACs.
@@ -29,6 +31,7 @@ Planning phase (pre-alpha). Core development has not started yet. See `CHANGELOG
 - `app/` — Android application module (future)
 - `gradle/` — Gradle wrapper and build tooling (future)
 - `CHANGELOG.md` — human-readable iteration notes
+- `README.zh.md` — Simplified Chinese version of this document
 - `LICENSE` — Apache License 2.0
 
 ## License

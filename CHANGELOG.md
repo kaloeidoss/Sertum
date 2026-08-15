@@ -2,6 +2,10 @@
 
 Human-readable iteration notes for the public repository. Fine-grained history lives in commit messages.
 
+## 2026-08-15 — bilingual README
+
+- Added `README.zh.md` (Simplified Chinese) and a language switcher at the top of `README.md`.
+
 ## 2026-08-15 — repository bootstrap
 
 - Created the public repository skeleton: `README.md`, Apache-2.0 `LICENSE`, `.gitignore`, and this changelog policy.
