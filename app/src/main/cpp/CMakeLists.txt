@@ -1,7 +1,7 @@
 cmake_minimum_required(VERSION 3.22.1)
 project(sertumspike CXX)
 
-add_library(sertumspike SHARED spike1_aaudio.cpp)
+add_library(sertumspike SHARED spike1_aaudio.cpp aaudio_backend.cpp)
 
 find_library(aaudio-lib aaudio)
 find_library(android-lib android)
