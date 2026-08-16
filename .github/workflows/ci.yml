@@ -32,8 +32,8 @@ jobs:
         shell: pwsh
         run: ./scripts/privacy_audit.ps1
 
-      - name: Unit tests
-        run: ./gradlew testDebugUnitTest
+      - name: Unit tests and core coverage gate
+        run: ./gradlew testDebugUnitTest jacocoTestReport jacocoCoverageVerification
 
       - name: Lint
         run: ./gradlew lintDebug
