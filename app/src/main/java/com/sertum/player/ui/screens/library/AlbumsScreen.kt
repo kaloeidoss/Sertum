@@ -24,7 +24,9 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
+import com.sertum.player.R
 import com.sertum.player.SertumApplication
 import com.sertum.player.data.db.AlbumEntity
 import com.sertum.player.ui.theme.SurfaceBlack
@@ -42,12 +44,12 @@ fun AlbumsScreen(onAlbumClick: (String) -> Unit = {}) {
         OutlinedTextField(
             value = query,
             onValueChange = { query = it },
-            placeholder = { Text("Search albums") },
+            placeholder = { Text(stringResource(R.string.search_albums_placeholder)) },
             singleLine = true,
             modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 8.dp),
         )
         if (visible.isEmpty()) {
-            EmptyLibrary("Albums")
+            EmptyLibrary(stringResource(R.string.nav_albums))
         } else {
             LazyVerticalGrid(
                 columns = GridCells.Fixed(2),

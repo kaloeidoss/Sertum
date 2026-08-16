@@ -1,0 +1,75 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">花环播放器</string>
+
+    <!-- 底部导航 -->
+    <string name="nav_songs">歌曲</string>
+    <string name="nav_albums">专辑</string>
+    <string name="nav_artists">艺术家</string>
+    <string name="nav_settings">设置</string>
+
+    <!-- 搜索 -->
+    <string name="search_all_placeholder">搜索歌曲、专辑、艺术家</string>
+    <string name="search_albums_placeholder">搜索专辑</string>
+    <string name="search_artists_placeholder">搜索艺术家</string>
+
+    <!-- 空态与权限 -->
+    <string name="no_items_yet">还没有%1$s</string>
+    <string name="empty_library_hint">请在设置中授权媒体访问或添加音乐文件夹。</string>
+    <string name="open_app_settings">打开应用设置</string>
+    <string name="unknown_artist">未知艺术家</string>
+
+    <!-- 专辑详情 / 封面 -->
+    <string name="album_default_title">专辑</string>
+    <string name="play_all">播放全部</string>
+    <string name="add_cover">添加封面</string>
+    <string name="replace_cover">更换封面</string>
+    <string name="remove_cover">移除封面</string>
+    <plurals name="album_count">
+        <item quantity="other">%1$d 张专辑</item>
+    </plurals>
+
+    <!-- 播放 -->
+    <string name="no_track_playing">未在播放</string>
+    <string name="cd_pause">暂停</string>
+    <string name="cd_play">播放</string>
+    <string name="cd_previous">上一首</string>
+    <string name="cd_next">下一首</string>
+    <string name="cd_queue">队列</string>
+    <string name="cd_move_up">上移</string>
+    <string name="cd_move_down">下移</string>
+    <string name="cd_remove">移除</string>
+    <string name="queue_empty">队列为空</string>
+    <string name="clear_queue">清空队列</string>
+    <string name="output_usb_exclusive">USB 独占</string>
+    <string name="output_bluetooth">蓝牙</string>
+    <string name="output_standard">常规输出</string>
+    <string name="error_streak_message">连续多首播放失败，已自动跳过。详情见 设置 → 诊断。</string>
+    <string name="usb_reconnect_failed_message">USB DAC 重连失败（3 次），请检查连接后手动重试。</string>
+
+    <!-- 设置 -->
+    <string name="settings_scanning">扫描</string>
+    <string name="settings_full_scan_title">全盘扫描（高级）</string>
+    <string name="settings_full_scan_on">已授权所有文件访问</string>
+    <string name="settings_full_scan_off">默认关闭；仅手动开启</string>
+    <string name="settings_add_folder">添加音乐文件夹（SAF）</string>
+    <string name="settings_output_mode">输出模式</string>
+    <string name="settings_output_auto_standard">自动 / 常规</string>
+    <string name="settings_output_usb_exclusive">USB 独占</string>
+    <string name="settings_language">语言</string>
+    <string name="settings_language_system">跟随系统</string>
+    <string name="settings_language_zh">中文</string>
+    <string name="settings_language_en">English</string>
+    <string name="settings_theme">主题</string>
+    <string name="settings_dark_theme">深色主题</string>
+    <string name="settings_dark_on">近似纯黑</string>
+    <string name="settings_dark_off">纸感浅色</string>
+    <string name="settings_about">关于</string>
+    <string name="settings_offline">100% 离线 · 无账号 · 无遥测</string>
+    <string name="settings_diagnostics_summary">诊断：%1$d 条 · %2$d 错误 · %3$d 个日志文件（滚动保留 %4$d 天）</string>
+    <string name="settings_export_diagnostics">导出诊断</string>
+    <string name="settings_background_playback">后台播放</string>
+    <string name="settings_background_hint">在 HyperOS/MIUI 上，请在电池优化与自启动设置中允许 Sertum，锁屏后播放才能持续。</string>
+    <string name="settings_battery_optimization">电池优化</string>
+    <string name="settings_app_details_autostart">应用详情 / 自启动</string>
+</resources>

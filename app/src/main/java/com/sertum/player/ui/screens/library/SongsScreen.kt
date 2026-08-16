@@ -22,7 +22,9 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
+import com.sertum.player.R
 import com.sertum.player.SertumApplication
 import com.sertum.player.audio.PlayableTrack
 import com.sertum.player.data.db.TrackEntity
@@ -42,7 +44,7 @@ fun SongsScreen() {
         OutlinedTextField(
             value = query,
             onValueChange = { query = it },
-            placeholder = { Text("Search songs, albums, artists") },
+            placeholder = { Text(stringResource(R.string.search_all_placeholder)) },
             singleLine = true,
             modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 8.dp),
         )
@@ -50,8 +52,8 @@ fun SongsScreen() {
             val context = LocalContext.current
             val granted = hasMediaPermission(context)
             EmptyLibrary(
-                label = "Songs",
-                actionText = if (granted) null else "Open app settings",
+                label = stringResource(R.string.nav_songs),
+                actionText = if (granted) null else stringResource(R.string.open_app_settings),
                 onAction = if (granted) null else {
                     {
                         context.startActivity(
@@ -111,7 +113,7 @@ fun TrackRow(track: TrackEntity, onClick: () -> Unit = {}) {
         Column(Modifier.weight(1f)) {
             Text(track.title, style = MaterialTheme.typography.titleMedium)
             Text(
-                text = track.artist ?: "Unknown artist",
+                text = track.artist ?: stringResource(R.string.unknown_artist),
                 style = MaterialTheme.typography.bodyMedium,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
             )

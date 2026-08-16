@@ -2,6 +2,7 @@ plugins {
     alias(libs.plugins.android.application)
     alias(libs.plugins.kotlin.compose)
     alias(libs.plugins.ksp)
+    jacoco
 }
 
 ksp {
@@ -18,6 +19,7 @@ android {
         targetSdk = 36
         versionCode = 1
         versionName = "0.1.0"
+        testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
 
         ndk {
             abiFilters.add("arm64-v8a")
@@ -34,6 +36,9 @@ android {
     }
 
     buildTypes {
+        debug {
+            enableUnitTestCoverage = true
+        }
         release {
             isMinifyEnabled = false
             proguardFiles(
@@ -79,4 +84,99 @@ dependencies {
 
     testImplementation(libs.junit)
     testImplementation(libs.truth)
+
+    androidTestImplementation(libs.junit)
+    androidTestImplementation(libs.truth)
+    androidTestImplementation(libs.androidx.test.ext.junit)
+    androidTestImplementation(libs.androidx.test.runner)
+}
+
+// PRD A-19: unit-testable core must stay at >= 70% instruction coverage.
+// Scope = behavioral core listed in PRD 10.1 (domain rules, metadata parsing,
+// scan merge/dedup, cover priority, resume rules) plus the AIFF extractor.
+// Explicitly excluded from the denominator:
+//  - Android I/O adapters (MediaStore/SAF/full-scan sources, CoverStore file
+//    I/O): verified by the PRD device matrix instead of JVM unit tests.
+//  - Room-bound resume implementation (same rules tested via InMemory store).
+//  - Pure data carriers / contracts / enum labels with no business logic.
+val coreCoveragePackages = listOf(
+    "com/sertum/player/domain/**",
+    "com/sertum/player/data/metadata/**",
+    "com/sertum/player/data/scan/**",
+    "com/sertum/player/data/covers/**",
+    "com/sertum/player/audio/extractor/**",
+)
+
+val coreCoverageExcludes = listOf(
+    "**/domain/model/AlbumKey.class",
+    "**/domain/playback/AudioOutputBackend.class",
+    "**/domain/playback/AudioOutputBackend\$DefaultImpls.class",
+    "**/domain/playback/BackendCapabilities.class",
+    "**/domain/playback/StreamSpec.class",
+    "**/domain/playback/PlaybackState.class",
+    "**/domain/playback/RoomResumePositionStore*",
+    "**/data/metadata/TrackMetadata.class",
+    "**/data/scan/MediaStoreSource*",
+    "**/data/scan/SafSource*",
+    "**/data/scan/FullScanSource*",
+    "**/data/covers/CoverStore*",
+)
+
+fun coreCoverageClassDirs(): ConfigurableFileCollection {
+    val classDirs = listOf(
+        "$buildDir/tmp/kotlin-classes/debug",
+        "$buildDir/intermediates/built_in_kotlinc/debug/compileDebugKotlin/classes",
+    ).filter { file(it).exists() }.map { file(it) }
+    val dirs = files(classDirs).asFileTree.matching {
+        include(coreCoveragePackages)
+        exclude(coreCoverageExcludes)
+    }
+    return files(dirs)
+}
+
+tasks.register<org.gradle.testing.jacoco.tasks.JacocoReport>("jacocoTestReport") {
+    dependsOn("testDebugUnitTest")
+    group = "verification"
+    description = "JaCoCo coverage report for the PRD 10.1 core packages."
+
+    reports {
+        xml.required.set(true)
+        html.required.set(true)
+    }
+    sourceDirectories.setFrom(files("src/main/java"))
+    classDirectories.setFrom(coreCoverageClassDirs())
+    executionData.setFrom(
+        fileTree("$buildDir") {
+            include("**/*.exec", "**/*.ec")
+        },
+    )
+}
+
+tasks.register<org.gradle.testing.jacoco.tasks.JacocoCoverageVerification>("jacocoCoverageVerification") {
+    dependsOn("testDebugUnitTest")
+    mustRunAfter("jacocoTestReport")
+    group = "verification"
+    description = "Fails when the PRD 10.1 core packages fall below 70% instruction coverage."
+
+    sourceDirectories.setFrom(files("src/main/java"))
+    classDirectories.setFrom(coreCoverageClassDirs())
+    executionData.setFrom(
+        fileTree("$buildDir") {
+            include("**/*.exec", "**/*.ec")
+        },
+    )
+    violationRules {
+        rule {
+            element = "BUNDLE"
+            limit {
+                counter = "INSTRUCTION"
+                value = "COVEREDRATIO"
+                minimum = "0.70".toBigDecimal()
+            }
+        }
+    }
+}
+
+tasks.named("check") {
+    dependsOn("jacocoCoverageVerification")
 }

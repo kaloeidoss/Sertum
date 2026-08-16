@@ -9,6 +9,7 @@ import androidx.media3.common.util.UnstableApi
 import androidx.media3.exoplayer.ExoPlayer
 import androidx.media3.exoplayer.source.DefaultMediaSourceFactory
 import com.sertum.player.audio.backend.RoutedAudioOutputProvider
+import com.sertum.player.audio.extractor.SertumExtractorsFactory
 
 /**
  * Owns the Media3 player. Audio output is routed by [router]:
@@ -21,7 +22,9 @@ class PlayerEngine(context: Context) {
     val router = RoutedAudioOutputProvider(context.applicationContext)
 
     val player: ExoPlayer = ExoPlayer.Builder(context)
-        .setMediaSourceFactory(DefaultMediaSourceFactory(context))
+        .setMediaSourceFactory(
+            DefaultMediaSourceFactory(context, SertumExtractorsFactory()),
+        )
         .setAudioOutputProvider(router)
         .setAudioAttributes(
             M3AudioAttributes.Builder()

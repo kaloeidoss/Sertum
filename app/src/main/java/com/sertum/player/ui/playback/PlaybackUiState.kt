@@ -8,7 +8,7 @@ import kotlinx.coroutines.flow.asStateFlow
 enum class OutputMode { USB_EXCLUSIVE, STANDARD, BLUETOOTH }
 
 data class PlaybackUiState(
-    val trackTitle: String = "Sertum",
+    val trackTitle: String = "",
     val artist: String = "",
     val album: String = "",
     val isPlaying: Boolean = false,
@@ -22,17 +22,11 @@ data class PlaybackUiState(
 )
 
 /**
- * M4 placeholder holder; M2's PlaybackCoordinator and the AAudio backend are
- * wired into this object when playback integration lands.
+ * UI projection of [com.sertum.player.audio.PlaybackCoordinator].
+ * Screens map the blank title to the localized "no track playing" string.
  */
 object PlaybackStateHolder {
-    private val _state = MutableStateFlow(
-        PlaybackUiState(
-            trackTitle = "No track playing",
-            artist = "—",
-            album = "—",
-        ),
-    )
+    private val _state = MutableStateFlow(PlaybackUiState())
     val state: StateFlow<PlaybackUiState> = _state.asStateFlow()
 
     fun update(transform: (PlaybackUiState) -> PlaybackUiState) {

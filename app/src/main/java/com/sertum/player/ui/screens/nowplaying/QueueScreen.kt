@@ -23,7 +23,9 @@ import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
+import com.sertum.player.R
 import com.sertum.player.SertumApplication
 import com.sertum.player.ui.playback.PlaybackStateHolder
 
@@ -33,7 +35,7 @@ fun QueueScreen() {
     val controller = (LocalContext.current.applicationContext as SertumApplication).playbackController
     if (state.queue.isEmpty()) {
         Text(
-            text = "Queue is empty",
+            text = stringResource(R.string.queue_empty),
             style = MaterialTheme.typography.bodyLarge,
             color = MaterialTheme.colorScheme.onSurfaceVariant,
             modifier = Modifier.fillMaxSize().padding(24.dp),
@@ -45,7 +47,7 @@ fun QueueScreen() {
             onClick = { controller.clearQueue() },
             modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp),
         ) {
-            Text("Clear queue")
+            Text(stringResource(R.string.clear_queue))
         }
         LazyColumn(Modifier.fillMaxSize()) {
             itemsIndexed(state.queue) { index, title ->
@@ -68,16 +70,16 @@ fun QueueScreen() {
                         onClick = { controller.moveQueueItem(index, index - 1) },
                         enabled = index > 0,
                     ) {
-                        Icon(Icons.Filled.ArrowUpward, contentDescription = "Move up")
+                        Icon(Icons.Filled.ArrowUpward, contentDescription = stringResource(R.string.cd_move_up))
                     }
                     IconButton(
                         onClick = { controller.moveQueueItem(index, index + 1) },
                         enabled = index < state.queue.lastIndex,
                     ) {
-                        Icon(Icons.Filled.ArrowDownward, contentDescription = "Move down")
+                        Icon(Icons.Filled.ArrowDownward, contentDescription = stringResource(R.string.cd_move_down))
                     }
                     IconButton(onClick = { controller.removeQueueItem(index) }) {
-                        Icon(Icons.Filled.Close, contentDescription = "Remove")
+                        Icon(Icons.Filled.Close, contentDescription = stringResource(R.string.cd_remove))
                     }
                 }
             }

@@ -2,6 +2,7 @@ package com.sertum.player.ui.screens.settings
 
 import android.content.Context
 import android.content.Intent
+import android.content.res.Configuration
 import android.net.Uri
 import android.os.Environment
 import android.provider.Settings
@@ -24,11 +25,14 @@ import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
+import com.sertum.player.R
 import com.sertum.player.SertumApplication
 import com.sertum.player.ui.playback.OutputMode
 import com.sertum.player.ui.settings.LanguageOption
 import com.sertum.player.ui.settings.SettingsStateHolder
+import java.util.Locale
 
 @Composable
 fun SettingsScreen() {
@@ -61,10 +65,12 @@ fun SettingsScreen() {
             .verticalScroll(rememberScrollState())
             .padding(16.dp),
     ) {
-        SectionTitle("Scanning")
+        SectionTitle(stringResource(R.string.settings_scanning))
         RowSwitch(
-            title = "Full-disk scan (advanced)",
-            subtitle = if (state.fullScanEnabled) "All files access enabled" else "Off by default; opt-in only",
+            title = stringResource(R.string.settings_full_scan_title),
+            subtitle = stringResource(
+                if (state.fullScanEnabled) R.string.settings_full_scan_on else R.string.settings_full_scan_off,
+            ),
             checked = state.fullScanEnabled,
             onCheckedChange = { enable ->
                 val isManager = android.os.Build.VERSION.SDK_INT >= 30 && Environment.isExternalStorageManager()
@@ -79,16 +85,16 @@ fun SettingsScreen() {
             },
         )
         OutlinedButton(onClick = { treeLauncher.launch(null) }, modifier = Modifier.padding(top = 8.dp)) {
-            Text("Add music folder (SAF)")
+            Text(stringResource(R.string.settings_add_folder))
         }
 
-        SectionTitle("Output mode")
+        SectionTitle(stringResource(R.string.settings_output_mode))
         listOf(
-            OutputMode.STANDARD to "Auto / standard",
-            OutputMode.USB_EXCLUSIVE to "USB exclusive",
-        ).forEach { (mode, label) ->
+            OutputMode.STANDARD to R.string.settings_output_auto_standard,
+            OutputMode.USB_EXCLUSIVE to R.string.settings_output_usb_exclusive,
+        ).forEach { (mode, labelRes) ->
             RadioRow(
-                label = label,
+                label = stringResource(labelRes),
                 selected = state.outputMode == mode,
                 onClick = {
                     SettingsStateHolder.update { it.copy(outputMode = mode) }
@@ -97,10 +103,33 @@ fun SettingsScreen() {
             )
         }
 
-        SectionTitle("Background playback")
+        SectionTitle(stringResource(R.string.settings_language))
+        listOf(
+            LanguageOption.SYSTEM to R.string.settings_language_system,
+            LanguageOption.ZH to R.string.settings_language_zh,
+            LanguageOption.EN to R.string.settings_language_en,
+        ).forEach { (option, labelRes) ->
+            RadioRow(
+                label = stringResource(labelRes),
+                selected = state.language == option,
+                onClick = {
+                    SettingsStateHolder.update { it.copy(language = option) }
+                    applyLocale(context, option)
+                },
+            )
+        }
+
+        SectionTitle(stringResource(R.string.settings_theme))
+        RowSwitch(
+            title = stringResource(R.string.settings_dark_theme),
+            subtitle = stringResource(if (state.darkTheme) R.string.settings_dark_on else R.string.settings_dark_off),
+            checked = state.darkTheme,
+            onCheckedChange = { dark -> SettingsStateHolder.update { it.copy(darkTheme = dark) } },
+        )
+
+        SectionTitle(stringResource(R.string.settings_background_playback))
         Text(
-            text = "On HyperOS/MIUI, allow Sertum in battery optimization and autostart " +
-                "settings so playback keeps running with the screen off.",
+            text = stringResource(R.string.settings_background_hint),
             style = MaterialTheme.typography.bodyMedium,
             color = MaterialTheme.colorScheme.onSurfaceVariant,
         )
@@ -110,7 +139,7 @@ fun SettingsScreen() {
             },
             modifier = Modifier.padding(top = 8.dp),
         ) {
-            Text("Battery optimization")
+            Text(stringResource(R.string.settings_battery_optimization))
         }
         OutlinedButton(
             onClick = {
@@ -123,41 +152,25 @@ fun SettingsScreen() {
             },
             modifier = Modifier.padding(top = 8.dp),
         ) {
-            Text("App details / autostart")
+            Text(stringResource(R.string.settings_app_details_autostart))
         }
 
-        SectionTitle("Language")
-        listOf(
-            LanguageOption.SYSTEM to "Follow system",
-            LanguageOption.ZH to "中文",
-            LanguageOption.EN to "English",
-        ).forEach { (option, label) ->
-            RadioRow(
-                label = label,
-                selected = state.language == option,
-                onClick = { SettingsStateHolder.update { it.copy(language = option) } },
-            )
-        }
-
-        SectionTitle("Theme")
-        RowSwitch(
-            title = "Dark theme",
-            subtitle = if (state.darkTheme) "Near-pure black" else "Paper light",
-            checked = state.darkTheme,
-            onCheckedChange = { dark -> SettingsStateHolder.update { it.copy(darkTheme = dark) } },
-        )
-
-        SectionTitle("About")
+        SectionTitle(stringResource(R.string.settings_about))
         Text("Sertum 0.1.0", style = MaterialTheme.typography.bodyLarge)
         Text(
-            text = "100% offline · no accounts · no telemetry",
+            text = stringResource(R.string.settings_offline),
             style = MaterialTheme.typography.bodyMedium,
             color = MaterialTheme.colorScheme.onSurfaceVariant,
         )
         val diagnostics = app.diagnosticsStore.counts
         Text(
-            text = "Diagnostics: ${diagnostics.totalEntries} entries · ${diagnostics.totalErrors} errors · " +
-                "${diagnostics.fileCount} day files (rolling ${7} days)",
+            text = stringResource(
+                R.string.settings_diagnostics_summary,
+                diagnostics.totalEntries,
+                diagnostics.totalErrors,
+                diagnostics.fileCount,
+                7,
+            ),
             style = MaterialTheme.typography.bodyMedium,
             color = MaterialTheme.colorScheme.onSurfaceVariant,
             modifier = Modifier.padding(top = 4.dp),
@@ -166,10 +179,27 @@ fun SettingsScreen() {
             onClick = { exportLauncher.launch("sertum-diagnostics.txt") },
             modifier = Modifier.padding(top = 8.dp),
         ) {
-            Text("Export diagnostics")
+            Text(stringResource(R.string.settings_export_diagnostics))
         }
     }
 }
+
+private fun applyLocale(context: Context, option: LanguageOption) {
+    val locale = when (option) {
+        LanguageOption.SYSTEM -> ResourcesCompatSystemLocale
+        LanguageOption.ZH -> Locale.SIMPLIFIED_CHINESE
+        LanguageOption.EN -> Locale.ENGLISH
+    }
+    Locale.setDefault(locale)
+    val config = Configuration(context.resources.configuration)
+    config.setLocale(locale)
+    @Suppress("DEPRECATION")
+    context.resources.updateConfiguration(config, context.resources.displayMetrics)
+    (context as? android.app.Activity)?.recreate()
+}
+
+private val ResourcesCompatSystemLocale: Locale
+    get() = android.content.res.Resources.getSystem().configuration.locales.get(0) ?: Locale.getDefault()
 
 @Composable
 private fun SectionTitle(text: String) {

@@ -21,7 +21,9 @@ import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
+import com.sertum.player.R
 import com.sertum.player.SertumApplication
 import com.sertum.player.ui.playback.PlaybackStateHolder
 
@@ -38,7 +40,10 @@ fun MiniPlayer(onExpand: () -> Unit) {
             verticalAlignment = Alignment.CenterVertically,
         ) {
             Column(Modifier.weight(1f)) {
-                Text(state.trackTitle, style = MaterialTheme.typography.titleMedium)
+                Text(
+                    text = state.trackTitle.ifBlank { stringResource(R.string.no_track_playing) },
+                    style = MaterialTheme.typography.titleMedium,
+                )
                 Text(
                     text = listOf(state.artist, state.album).filter { it.isNotBlank() }.joinToString(" · "),
                     style = MaterialTheme.typography.bodyMedium,
@@ -48,7 +53,7 @@ fun MiniPlayer(onExpand: () -> Unit) {
             IconButton(onClick = { controller.togglePlayPause() }) {
                 Icon(
                     imageVector = if (state.isPlaying) Icons.Filled.Pause else Icons.Filled.PlayArrow,
-                    contentDescription = if (state.isPlaying) "Pause" else "Play",
+                    contentDescription = stringResource(if (state.isPlaying) R.string.cd_pause else R.string.cd_play),
                 )
             }
         }

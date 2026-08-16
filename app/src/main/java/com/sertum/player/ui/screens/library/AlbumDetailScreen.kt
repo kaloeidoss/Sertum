@@ -18,7 +18,9 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
+import com.sertum.player.R
 import com.sertum.player.SertumApplication
 import com.sertum.player.data.db.CoverEntity
 import kotlinx.coroutines.launch
@@ -47,11 +49,11 @@ fun AlbumDetailScreen(albumKey: String) {
         item {
             Column(Modifier.fillMaxWidth().padding(16.dp)) {
                 Text(
-                    text = album?.albumTitle ?: "Album",
+                    text = album?.albumTitle ?: stringResource(R.string.album_default_title),
                     style = MaterialTheme.typography.headlineLarge,
                 )
                 Text(
-                    text = album?.albumArtist ?: "Unknown artist",
+                    text = album?.albumArtist ?: stringResource(R.string.unknown_artist),
                     style = MaterialTheme.typography.bodyLarge,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                 )
@@ -64,7 +66,7 @@ fun AlbumDetailScreen(albumKey: String) {
                     enabled = tracks.isNotEmpty(),
                     modifier = Modifier.padding(top = 12.dp),
                 ) {
-                    Text("Play all")
+                    Text(stringResource(R.string.play_all))
                 }
                 OutlinedButton(
                     onClick = {
@@ -74,7 +76,11 @@ fun AlbumDetailScreen(albumKey: String) {
                     },
                     modifier = Modifier.padding(top = 8.dp),
                 ) {
-                    Text(if (album?.coverRef != null) "Replace cover" else "Add cover")
+                    Text(
+                        stringResource(
+                            if (album?.coverRef != null) R.string.replace_cover else R.string.add_cover,
+                        ),
+                    )
                 }
                 if (album?.coverRef != null) {
                     OutlinedButton(
@@ -87,7 +93,7 @@ fun AlbumDetailScreen(albumKey: String) {
                         },
                         modifier = Modifier.padding(top = 8.dp),
                     ) {
-                        Text("Remove cover")
+                        Text(stringResource(R.string.remove_cover))
                     }
                 }
             }

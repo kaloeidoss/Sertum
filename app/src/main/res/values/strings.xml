@@ -1,4 +1,76 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
     <string name="app_name">Sertum</string>
+
+    <!-- Bottom navigation -->
+    <string name="nav_songs">Songs</string>
+    <string name="nav_albums">Albums</string>
+    <string name="nav_artists">Artists</string>
+    <string name="nav_settings">Settings</string>
+
+    <!-- Search -->
+    <string name="search_all_placeholder">Search songs, albums, artists</string>
+    <string name="search_albums_placeholder">Search albums</string>
+    <string name="search_artists_placeholder">Search artists</string>
+
+    <!-- Empty library / permissions -->
+    <string name="no_items_yet">No %1$s yet</string>
+    <string name="empty_library_hint">Grant media access or scan folders from Settings.</string>
+    <string name="open_app_settings">Open app settings</string>
+    <string name="unknown_artist">Unknown artist</string>
+
+    <!-- Album detail / covers -->
+    <string name="album_default_title">Album</string>
+    <string name="play_all">Play all</string>
+    <string name="add_cover">Add cover</string>
+    <string name="replace_cover">Replace cover</string>
+    <string name="remove_cover">Remove cover</string>
+    <plurals name="album_count">
+        <item quantity="one">%1$d album</item>
+        <item quantity="other">%1$d albums</item>
+    </plurals>
+
+    <!-- Playback -->
+    <string name="no_track_playing">No track playing</string>
+    <string name="cd_pause">Pause</string>
+    <string name="cd_play">Play</string>
+    <string name="cd_previous">Previous</string>
+    <string name="cd_next">Next</string>
+    <string name="cd_queue">Queue</string>
+    <string name="cd_move_up">Move up</string>
+    <string name="cd_move_down">Move down</string>
+    <string name="cd_remove">Remove</string>
+    <string name="queue_empty">Queue is empty</string>
+    <string name="clear_queue">Clear queue</string>
+    <string name="output_usb_exclusive">USB exclusive</string>
+    <string name="output_bluetooth">Bluetooth</string>
+    <string name="output_standard">Standard output</string>
+    <string name="error_streak_message">Several tracks failed in a row and were skipped. See Settings → Diagnostics.</string>
+    <string name="usb_reconnect_failed_message">USB DAC reconnect failed after 3 attempts. Check the connection and try again.</string>
+
+    <!-- Settings -->
+    <string name="settings_scanning">Scanning</string>
+    <string name="settings_full_scan_title">Full-disk scan (advanced)</string>
+    <string name="settings_full_scan_on">All files access enabled</string>
+    <string name="settings_full_scan_off">Off by default; opt-in only</string>
+    <string name="settings_add_folder">Add music folder (SAF)</string>
+    <string name="settings_output_mode">Output mode</string>
+    <string name="settings_output_auto_standard">Auto / standard</string>
+    <string name="settings_output_usb_exclusive">USB exclusive</string>
+    <string name="settings_language">Language</string>
+    <string name="settings_language_system">Follow system</string>
+    <string name="settings_language_zh">中文</string>
+    <string name="settings_language_en">English</string>
+    <string name="settings_theme">Theme</string>
+    <string name="settings_dark_theme">Dark theme</string>
+    <string name="settings_dark_on">Near-pure black</string>
+    <string name="settings_dark_off">Paper light</string>
+    <string name="settings_about">About</string>
+    <string name="settings_offline">100% offline · no accounts · no telemetry</string>
+    <string name="settings_diagnostics_summary">Diagnostics: %1$d entries · %2$d errors · %3$d day files (rolling %4$d days)</string>
+    <string name="settings_export_diagnostics">Export diagnostics</string>
+    <string name="settings_background_playback">Background playback</string>
+    <string name="settings_background_hint">On HyperOS/MIUI, allow Sertum in battery optimization and autostart settings so playback keeps running with the screen off.</string>
+    <string name="settings_battery_optimization">Battery optimization</string>
+    <string name="settings_app_details_autostart">App details / autostart</string>
 </resources>

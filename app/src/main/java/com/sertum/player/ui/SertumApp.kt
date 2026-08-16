@@ -22,12 +22,14 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.stringResource
 import androidx.navigation.NavType
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
 import androidx.navigation.navArgument
+import com.sertum.player.R
 import com.sertum.player.SertumApplication
 import com.sertum.player.ui.navigation.SertumDestinations
 import com.sertum.player.ui.screens.library.AlbumDetailScreen
@@ -43,15 +45,15 @@ import com.sertum.player.ui.theme.SertumTheme
 
 private data class TopLevelDestination(
     val route: String,
-    val label: String,
+    val labelRes: Int,
     val icon: @Composable () -> Unit,
 )
 
 private val topLevel = listOf(
-    TopLevelDestination(SertumDestinations.SONGS, "Songs", { Icon(Icons.Filled.LibraryMusic, contentDescription = "Songs") }),
-    TopLevelDestination(SertumDestinations.ALBUMS, "Albums", { Icon(Icons.Filled.Album, contentDescription = "Albums") }),
-    TopLevelDestination(SertumDestinations.ARTISTS, "Artists", { Icon(Icons.Filled.Person, contentDescription = "Artists") }),
-    TopLevelDestination(SertumDestinations.SETTINGS, "Settings", { Icon(Icons.Filled.Settings, contentDescription = "Settings") }),
+    TopLevelDestination(SertumDestinations.SONGS, R.string.nav_songs, { Icon(Icons.Filled.LibraryMusic, contentDescription = stringResource(R.string.nav_songs)) }),
+    TopLevelDestination(SertumDestinations.ALBUMS, R.string.nav_albums, { Icon(Icons.Filled.Album, contentDescription = stringResource(R.string.nav_albums)) }),
+    TopLevelDestination(SertumDestinations.ARTISTS, R.string.nav_artists, { Icon(Icons.Filled.Person, contentDescription = stringResource(R.string.nav_artists)) }),
+    TopLevelDestination(SertumDestinations.SETTINGS, R.string.nav_settings, { Icon(Icons.Filled.Settings, contentDescription = stringResource(R.string.nav_settings)) }),
 )
 
 @Composable
@@ -92,7 +94,7 @@ fun SertumApp() {
                                     }
                                 },
                                 icon = dest.icon,
-                                label = { Text(dest.label) },
+                                label = { Text(stringResource(dest.labelRes)) },
                                 colors = NavigationBarItemDefaults.colors(
                                     selectedIconColor = com.sertum.player.ui.theme.WarmGold,
                                     selectedTextColor = com.sertum.player.ui.theme.WarmGold,

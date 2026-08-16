@@ -21,7 +21,10 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.pluralStringResource
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
+import com.sertum.player.R
 import com.sertum.player.SertumApplication
 import com.sertum.player.data.db.ArtistEntity
 import com.sertum.player.ui.theme.WarmGold
@@ -36,12 +39,12 @@ fun ArtistsScreen(onArtistClick: (String) -> Unit = {}) {
         OutlinedTextField(
             value = query,
             onValueChange = { query = it },
-            placeholder = { Text("Search artists") },
+            placeholder = { Text(stringResource(R.string.search_artists_placeholder)) },
             singleLine = true,
             modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 8.dp),
         )
         if (visible.isEmpty()) {
-            EmptyLibrary("Artists")
+            EmptyLibrary(stringResource(R.string.nav_artists))
         } else {
             val grouped = visible.groupBy { it.sortKey.firstOrNull()?.uppercase() ?: "#" }
             LazyColumn(Modifier.fillMaxSize()) {
@@ -71,7 +74,7 @@ fun ArtistsScreen(onArtistClick: (String) -> Unit = {}) {
                             Column(Modifier.weight(1f)) {
                                 Text(artist.name, style = MaterialTheme.typography.titleMedium)
                                 Text(
-                                    text = "${artist.albumCount} albums",
+                                    text = pluralStringResource(R.plurals.album_count, artist.albumCount, artist.albumCount),
                                     style = MaterialTheme.typography.bodyMedium,
                                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                                 )

@@ -308,7 +308,7 @@ class PlaybackCoordinator(
                 diagnostics.log(DiagnosticLevel.INFO, "usb", "reconnected; waiting for user")
             } else {
                 _usbRecovery.value = UsbRecoveryState.FAILED
-                _userMessage.value = "USB DAC 重连失败（3 次），请检查连接后手动重试"
+                _userMessage.value = appContext.getString(com.sertum.player.R.string.usb_reconnect_failed_message)
                 diagnostics.log(DiagnosticLevel.ERROR, "usb", "reconnect failed after 3 attempts")
             }
             updateUiState()
@@ -340,7 +340,7 @@ class PlaybackCoordinator(
         track?.let { scope.launch { markTrackUnplayable(it.id) } }
         val decision = errorPolicy.onTrackFailed()
         if (decision.notifyUser) {
-            _userMessage.value = "连续多首播放失败，已自动跳过。详情见 设置 → 诊断"
+            _userMessage.value = appContext.getString(com.sertum.player.R.string.error_streak_message)
         }
         val nextIndex = player.currentMediaItemIndex + 1
         if (decision.skipToNext && nextIndex < playlist.size) {
@@ -387,7 +387,7 @@ class PlaybackCoordinator(
         val current = currentTrack()
         PlaybackStateHolder.update { state ->
             state.copy(
-                trackTitle = current?.title ?: "No track playing",
+                trackTitle = current?.title.orEmpty(),
                 artist = current?.artist ?: "—",
                 album = current?.album ?: "—",
                 isPlaying = player.isPlaying,
