@@ -10,10 +10,14 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
@@ -26,13 +30,28 @@ import com.sertum.player.ui.theme.WarmGold
 fun SongsScreen() {
     val dao = (LocalContext.current.applicationContext as SertumApplication).database.libraryDao()
     val tracks by dao.observeTracks().collectAsState(initial = emptyList())
-    if (tracks.isEmpty()) {
-        EmptyLibrary("Songs")
-        return
+    var query by remember { mutableStateOf("") }
+    val visible = if (query.isBlank()) tracks else tracks.filter {
+        it.title.contains(query, ignoreCase = true) ||
+            (it.artist?.contains(query, ignoreCase = true) == true) ||
+            (it.albumTitle?.contains(query, ignoreCase = true) == true)
     }
-    LazyColumn(Modifier.fillMaxSize()) {
-        items(tracks, key = { it.id }) { track ->
-            TrackRow(track)
+    Column(Modifier.fillMaxSize()) {
+        OutlinedTextField(
+            value = query,
+            onValueChange = { query = it },
+            placeholder = { Text("Search songs, albums, artists") },
+            singleLine = true,
+            modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 8.dp),
+        )
+        if (visible.isEmpty()) {
+            EmptyLibrary("Songs")
+        } else {
+            LazyColumn(Modifier.fillMaxSize()) {
+                items(visible, key = { it.id }) { track ->
+                    TrackRow(track)
+                }
+            }
         }
     }
 }

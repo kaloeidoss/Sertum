@@ -13,10 +13,14 @@ import androidx.compose.foundation.lazy.grid.GridCells
 import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
 import androidx.compose.foundation.lazy.grid.items
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
@@ -24,23 +28,37 @@ import androidx.compose.ui.unit.dp
 import com.sertum.player.SertumApplication
 import com.sertum.player.data.db.AlbumEntity
 import com.sertum.player.ui.theme.SurfaceBlack
+import coil3.compose.AsyncImage
 
 @Composable
 fun AlbumsScreen(onAlbumClick: (String) -> Unit = {}) {
     val dao = (LocalContext.current.applicationContext as SertumApplication).database.libraryDao()
     val albums by dao.observeAlbums().collectAsState(initial = emptyList())
-    if (albums.isEmpty()) {
-        EmptyLibrary("Albums")
-        return
+    var query by remember { mutableStateOf("") }
+    val visible = if (query.isBlank()) albums else albums.filter {
+        it.title.contains(query, ignoreCase = true) || it.albumArtist.contains(query, ignoreCase = true)
     }
-    LazyVerticalGrid(
-        columns = GridCells.Fixed(2),
-        modifier = Modifier.fillMaxSize().padding(12.dp),
-        horizontalArrangement = Arrangement.spacedBy(12.dp),
-        verticalArrangement = Arrangement.spacedBy(16.dp),
-    ) {
-        items(albums, key = { it.albumKey }) { album ->
-            AlbumCard(album, onClick = { onAlbumClick(album.albumKey) })
+    androidx.compose.foundation.layout.Column(Modifier.fillMaxSize()) {
+        OutlinedTextField(
+            value = query,
+            onValueChange = { query = it },
+            placeholder = { Text("Search albums") },
+            singleLine = true,
+            modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 8.dp),
+        )
+        if (visible.isEmpty()) {
+            EmptyLibrary("Albums")
+        } else {
+            LazyVerticalGrid(
+                columns = GridCells.Fixed(2),
+                modifier = Modifier.fillMaxSize().padding(12.dp),
+                horizontalArrangement = Arrangement.spacedBy(12.dp),
+                verticalArrangement = Arrangement.spacedBy(16.dp),
+            ) {
+                items(visible, key = { it.albumKey }) { album ->
+                    AlbumCard(album, onClick = { onAlbumClick(album.albumKey) })
+                }
+            }
         }
     }
 }
@@ -59,11 +77,19 @@ fun AlbumCard(album: AlbumEntity, onClick: () -> Unit = {}) {
                 .background(SurfaceBlack, MaterialTheme.shapes.medium),
             contentAlignment = Alignment.Center,
         ) {
-            Text(
-                text = album.title.take(1).uppercase(),
-                style = MaterialTheme.typography.displayMedium,
-                color = MaterialTheme.colorScheme.primary,
-            )
+            if (album.coverRef != null) {
+                AsyncImage(
+                    model = album.coverRef,
+                    contentDescription = null,
+                    modifier = Modifier.fillMaxSize(),
+                )
+            } else {
+                Text(
+                    text = album.title.take(1).uppercase(),
+                    style = MaterialTheme.typography.displayMedium,
+                    color = MaterialTheme.colorScheme.primary,
+                )
+            }
         }
         Text(
             text = album.title,
