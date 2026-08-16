@@ -32,6 +32,10 @@
         <activity
             android:name=".spike2.Spike2Activity"
             android:exported="true" />
+
+        <activity
+            android:name=".audio.backend.BackendSmokeActivity"
+            android:exported="true" />
     </application>
 
 </manifest>
