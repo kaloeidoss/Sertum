@@ -2,6 +2,14 @@
 
 Human-readable iteration notes for the public repository. Fine-grained history lives in commit messages.
 
+## 2026-08-16 — M3 scanning and library
+
+- Room schema v1: tracks/albums/artists/covers with album identity key (album artist > artist > folder fallback).
+- Metadata model and GBK/GB18030 ID3v2.3 text fixer with sample-based unit tests.
+- Three scan sources behind one ScanCandidate model: MediaStore, SAF folders, optional full-disk scan (20k cap).
+- ScanEngine: path-normalized dedupe, incremental add/update diff, orphan cleanup.
+- Cover storage (non-destructive app-private files) and four-level cover priority resolver.
+
 ## 2026-08-16 — M2 audio core
 
 - AudioOutputBackend contract, BitPerfectState and volume policy with unit tests.
