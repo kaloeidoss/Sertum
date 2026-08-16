@@ -13,7 +13,7 @@ import java.nio.ByteBuffer
  * System audio path (speaker / wired / Bluetooth).
  * Bit-perfect is NOT promised on this path (PRD 7.2).
  */
-@OptIn(UnstableApi::class)
+@androidx.annotation.OptIn(UnstableApi::class)
 class StandardBackend : AudioOutputBackend {
 
     override val capabilities = BackendCapabilities(supportsHardwareVolume = false, isExclusive = false)
