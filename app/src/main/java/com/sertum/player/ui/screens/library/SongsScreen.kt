@@ -48,22 +48,26 @@ fun SongsScreen() {
             singleLine = true,
             modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 8.dp),
         )
-        if (visible.isEmpty()) {
-            val context = LocalContext.current
-            val granted = hasMediaPermission(context)
+        val context = LocalContext.current
+        val granted = hasMediaPermission(context)
+        if (!granted) {
             EmptyLibrary(
                 label = stringResource(R.string.nav_songs),
-                actionText = if (granted) null else stringResource(R.string.open_app_settings),
-                onAction = if (granted) null else {
-                    {
-                        context.startActivity(
-                            android.content.Intent(
-                                android.provider.Settings.ACTION_APPLICATION_DETAILS_SETTINGS,
-                                android.net.Uri.parse("package:${context.packageName}"),
-                            ),
-                        )
-                    }
+                actionText = stringResource(R.string.open_app_settings),
+                onAction = {
+                    context.startActivity(
+                        android.content.Intent(
+                            android.provider.Settings.ACTION_APPLICATION_DETAILS_SETTINGS,
+                            android.net.Uri.parse("package:${context.packageName}"),
+                        ),
+                    )
                 },
+            )
+        } else if (visible.isEmpty()) {
+            EmptyLibrary(
+                label = stringResource(R.string.nav_songs),
+                actionText = null,
+                onAction = null,
             )
         } else {
             val controller = (LocalContext.current.applicationContext as SertumApplication).playbackController
@@ -126,7 +130,7 @@ fun TrackRow(track: TrackEntity, onClick: () -> Unit = {}) {
     }
 }
 
-private fun hasMediaPermission(context: android.content.Context): Boolean {
+internal fun hasMediaPermission(context: android.content.Context): Boolean {
     val granted = android.content.pm.PackageManager.PERMISSION_GRANTED
     return if (android.os.Build.VERSION.SDK_INT >= 33) {
         context.checkSelfPermission(android.Manifest.permission.READ_MEDIA_AUDIO) == granted

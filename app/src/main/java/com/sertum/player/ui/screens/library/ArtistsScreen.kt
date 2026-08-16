@@ -43,7 +43,22 @@ fun ArtistsScreen(onArtistClick: (String) -> Unit = {}) {
             singleLine = true,
             modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 8.dp),
         )
-        if (visible.isEmpty()) {
+        val context = LocalContext.current
+        val granted = hasMediaPermission(context)
+        if (!granted) {
+            EmptyLibrary(
+                label = stringResource(R.string.nav_artists),
+                actionText = stringResource(R.string.open_app_settings),
+                onAction = {
+                    context.startActivity(
+                        android.content.Intent(
+                            android.provider.Settings.ACTION_APPLICATION_DETAILS_SETTINGS,
+                            android.net.Uri.parse("package:${context.packageName}"),
+                        ),
+                    )
+                },
+            )
+        } else if (visible.isEmpty()) {
             EmptyLibrary(stringResource(R.string.nav_artists))
         } else {
             val grouped = visible.groupBy { it.sortKey.firstOrNull()?.uppercase() ?: "#" }
