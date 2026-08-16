@@ -23,7 +23,9 @@ object PreferHardwareCodecSelector : MediaCodecSelector {
             requiresSecureDecoder,
             requiresTunnelingDecoder,
         )
-        val hardware = all.filter { it.hardwareAccelerated }
+        val hardware = all.filter {
+            it.hardwareAccelerated || it.name.contains("hw", ignoreCase = true)
+        }
         return hardware + all.filterNot { candidate -> hardware.any { candidate === it } }
     }
 }

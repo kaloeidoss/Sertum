@@ -144,7 +144,11 @@ class AiffExtractor : Extractor {
         val out = trackOutput ?: return Extractor.RESULT_END_OF_INPUT
         if (dataBytesRemaining <= 0) return Extractor.RESULT_END_OF_INPUT
 
-        val block = 4096.coerceAtMost(dataBytesRemaining.toInt())
+        // Media3 audio processors require buffers that contain whole samples;
+        // align multibyte PCM blocks to bytesPerSample.
+        val maxBlock = 4096.coerceAtMost(dataBytesRemaining.toInt())
+        val block = if (bytesPerSample > 1) maxBlock - (maxBlock % bytesPerSample) else maxBlock
+        if (block <= 0) return Extractor.RESULT_END_OF_INPUT
         val read: Int = if (bytesPerSample > 1) {
             // AIFF PCM is big-endian; Media3 PCM is little-endian.
             // Feed through a DataReader that byte-swaps on read so the

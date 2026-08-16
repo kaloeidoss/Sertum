@@ -20,17 +20,19 @@ import java.util.concurrent.CopyOnWriteArrayList
 class BackendAudioOutput(
     private val backend: AudioOutputBackend,
     private val outputConfig: androidx.media3.exoplayer.audio.AudioOutputProvider.OutputConfig,
+    private val targetBitDepth: Int = 24,
 ) : androidx.media3.exoplayer.audio.AudioOutput {
 
     private val listeners = CopyOnWriteArrayList<androidx.media3.exoplayer.audio.AudioOutput.Listener>()
     private val sampleRate = outputConfig.sampleRate
+    private val targetDepth = targetBitDepth.coerceIn(16, 24)
     private var playbackParameters = PlaybackParameters.DEFAULT
     private var volume = 1f
     private var released = false
 
     init {
         val bitDepth = when (outputConfig.encoding) {
-            C.ENCODING_PCM_24BIT, C.ENCODING_PCM_FLOAT -> 24
+            C.ENCODING_PCM_24BIT, C.ENCODING_PCM_FLOAT -> targetDepth
             else -> 16
         }
         val channels = Integer.bitCount(outputConfig.channelMask).coerceAtLeast(1)
@@ -53,7 +55,11 @@ class BackendAudioOutput(
             C.ENCODING_PCM_FLOAT -> {
                 val bytes = ByteArray(buffer.remaining())
                 buffer.get(bytes)
-                PcmConversion.float32ToPacked24Le(bytes)
+                if (targetDepth == 16) {
+                    PcmConversion.float32ToPacked16Le(bytes)
+                } else {
+                    PcmConversion.float32ToPacked24Le(bytes)
+                }
             }
             else -> {
                 val bytes = ByteArray(buffer.remaining())

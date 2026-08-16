@@ -70,4 +70,30 @@ class PcmConversionTest {
         assertThat(PcmConversion.float32ToPacked24Le(inBytes))
             .isEqualTo(packed24(8_388_607, -8_388_608, 4_194_304))
     }
+
+    @Test
+    fun `16-bit packing clamps and quantizes to signed 16-bit little-endian`() {
+        val bytes = PcmConversion.float32ToPacked16Le(floats(1f, -1f, 0.5f, 2f, -2f))
+        val expected = ByteBuffer.allocate(10)
+            .order(ByteOrder.LITTLE_ENDIAN)
+            .apply {
+                putShort(32_767); putShort(-32_768); putShort(16_384); putShort(32_767); putShort(-32_768)
+            }
+            .array()
+        assertThat(bytes).isEqualTo(expected)
+    }
+
+    @Test
+    fun `16-bit round trip is exact for representative signed shorts`() {
+        val representatives = listOf(0, 1, -1, 12_345, -12_345, 32_767, -32_768)
+        val floats = ByteBuffer.allocate(representatives.size * 4)
+            .order(ByteOrder.LITTLE_ENDIAN)
+            .apply { representatives.forEach { putFloat(it / 32_768.0f) } }
+            .array()
+        val expected = ByteBuffer.allocate(representatives.size * 2)
+            .order(ByteOrder.LITTLE_ENDIAN)
+            .apply { representatives.forEach { putShort(it.toShort()) } }
+            .array()
+        assertThat(PcmConversion.float32ToPacked16Le(floats)).isEqualTo(expected)
+    }
 }

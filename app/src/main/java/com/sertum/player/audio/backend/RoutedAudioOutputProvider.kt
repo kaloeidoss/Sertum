@@ -25,6 +25,15 @@ class RoutedAudioOutputProvider(context: Context) :
     @Volatile
     var exclusiveEnabled: Boolean = false
 
+    /**
+     * Source bit depth of the last compressed format seen by
+     * [getFormatSupport]. Media3 converts 24/32-bit decoded sources to float;
+     * this side channel lets [BackendAudioOutput] pack float back to the
+     * source depth instead of blindly using 24-bit.
+     */
+    @Volatile
+    private var pendingSourceBitDepth = 24
+
     private val exclusiveOutputs = java.util.concurrent.CopyOnWriteArrayList<BackendAudioOutput>()
 
     private fun isExclusiveRoute(): Boolean = exclusiveEnabled && exclusiveBackend != null
@@ -33,6 +42,14 @@ class RoutedAudioOutputProvider(context: Context) :
         formatConfig: androidx.media3.exoplayer.audio.AudioOutputProvider.FormatConfig,
     ): androidx.media3.exoplayer.audio.AudioOutputProvider.FormatSupport {
         if (!isExclusiveRoute()) return super.getFormatSupport(formatConfig)
+        val pcmEncoding = formatConfig.format.pcmEncoding
+        if (formatConfig.format.sampleMimeType != MimeTypes.AUDIO_RAW) {
+            when (pcmEncoding) {
+                C.ENCODING_PCM_16BIT -> pendingSourceBitDepth = 16
+                C.ENCODING_PCM_24BIT -> pendingSourceBitDepth = 24
+                C.ENCODING_PCM_32BIT -> pendingSourceBitDepth = 24
+            }
+        }
         // Direct support only for raw PCM families the AAudio backend
         // consumes. Compressed formats carry pcmEncoding metadata too
         // (e.g. FLAC stream info), so sampleMimeType must be audio/raw —
@@ -41,16 +58,10 @@ class RoutedAudioOutputProvider(context: Context) :
         val level = when {
             !isRawPcm ->
                 androidx.media3.exoplayer.audio.AudioOutputProvider.FORMAT_UNSUPPORTED
-            formatConfig.format.pcmEncoding == C.ENCODING_PCM_16BIT ||
-                formatConfig.format.pcmEncoding == C.ENCODING_PCM_24BIT ->
+            pcmEncoding == C.ENCODING_PCM_16BIT ||
+                pcmEncoding == C.ENCODING_PCM_24BIT ||
+                pcmEncoding == C.ENCODING_PCM_FLOAT ->
                 androidx.media3.exoplayer.audio.AudioOutputProvider.FORMAT_SUPPORTED_DIRECTLY
-            // Float is produced by Media3's own processing pipeline for
-            // 24/32-bit PCM. Returning WITH_TRANSCODING here prevents the
-            // renderer from forcing decoders into float output, so 16-bit
-            // sources keep their native depth; the float pipeline still
-            // reaches getOutputConfig and is packed back to 24-bit.
-            formatConfig.format.pcmEncoding == C.ENCODING_PCM_FLOAT ->
-                androidx.media3.exoplayer.audio.AudioOutputProvider.FORMAT_SUPPORTED_WITH_TRANSCODING
             else ->
                 androidx.media3.exoplayer.audio.AudioOutputProvider.FORMAT_UNSUPPORTED
         }
@@ -94,7 +105,8 @@ class RoutedAudioOutputProvider(context: Context) :
             ?: throw androidx.media3.exoplayer.audio.AudioOutputProvider.InitializationException(
                 IllegalStateException("exclusive backend missing"),
             )
-        return BackendAudioOutput(backend, outputConfig).also { exclusiveOutputs.add(it) }
+        return BackendAudioOutput(backend, outputConfig, pendingSourceBitDepth)
+            .also { exclusiveOutputs.add(it) }
     }
 
     override fun release() {
