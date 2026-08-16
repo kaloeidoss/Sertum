@@ -19,7 +19,7 @@ import java.io.EOFException
  * big-endian PCM. Seeking is not implemented for the M2 slice (Unseekable);
  * the player can still decode and play the stream.
  */
-@OptIn(UnstableApi::class)
+@androidx.annotation.OptIn(UnstableApi::class)
 class AiffExtractor : Extractor {
 
     companion object {
