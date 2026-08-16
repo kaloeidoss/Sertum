@@ -12,6 +12,7 @@ import androidx.compose.material3.NavigationBarItem
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
 import androidx.navigation.NavType
@@ -30,6 +31,7 @@ import com.sertum.player.ui.screens.nowplaying.MiniPlayer
 import com.sertum.player.ui.screens.nowplaying.NowPlayingScreen
 import com.sertum.player.ui.screens.nowplaying.QueueScreen
 import com.sertum.player.ui.screens.settings.SettingsScreen
+import com.sertum.player.ui.theme.SertumTheme
 
 private data class TopLevelDestination(
     val route: String,
@@ -49,8 +51,10 @@ fun SertumApp() {
     val navController = rememberNavController()
     val backStack by navController.currentBackStackEntryAsState()
     val currentRoute = backStack?.destination?.route
+    val settings by com.sertum.player.ui.settings.SettingsStateHolder.state.collectAsState()
 
-    Scaffold(
+    SertumTheme(darkTheme = settings.darkTheme) {
+        Scaffold(
         bottomBar = {
             if (currentRoute in topLevel.map { it.route }) {
                 androidx.compose.foundation.layout.Column {
@@ -107,6 +111,7 @@ fun SertumApp() {
                 NowPlayingScreen(onOpenQueue = { navController.navigate(SertumDestinations.QUEUE) })
             }
             composable(SertumDestinations.QUEUE) { QueueScreen() }
+        }
         }
     }
 }
