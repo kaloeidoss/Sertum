@@ -2,6 +2,17 @@
 
 Human-readable iteration notes for the public repository. Fine-grained history lives in commit messages.
 
+## 2026-08-16 — M4 UI
+
+- Design tokens: near-pure black + warm gold, serif display/sans body, dark/light themes.
+- Four-tab navigation with state restoration; songs/albums/artists views bound to Room flows.
+- Artist → albums → tracks flow (the HiBy gap); album cover grid via Coil3 with bounded caches.
+- Mini player, now-playing screen with framed USB badge (green/yellow semantics, no "bit-perfect" text), queue screen.
+- Substring search on all library views.
+- Settings: SAF folder picker, opt-in full-disk scan switch (All files access guidance), output mode, language, theme, about.
+- Cover add/replace/remove via Photo Picker; permission-aware empty states.
+- Device screenshots captured and checked with the visual-acceptance loop (modlens/vision + pixel color sampling).
+
 ## 2026-08-16 — M3 scanning and library
 
 - Room schema v1: tracks/albums/artists/covers with album identity key (album artist > artist > folder fallback).
