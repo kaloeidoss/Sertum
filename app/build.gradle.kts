@@ -70,6 +70,7 @@ dependencies {
     implementation(libs.kotlinx.coroutines.android)
     implementation(libs.androidx.room.runtime)
     implementation(libs.androidx.room.ktx)
+    implementation(libs.androidx.documentfile)
     ksp(libs.androidx.room.compiler)
 
     testImplementation(libs.junit)

@@ -7,6 +7,7 @@ media3 = "1.11.0"
 coroutines = "1.11.0"
 room = "2.8.4"
 ksp = "2.3.11"
+documentfile = "1.0.1"
 junit = "4.13.2"
 truth = "1.4.5"
 
@@ -22,6 +23,7 @@ kotlinx-coroutines-android = { group = "org.jetbrains.kotlinx", name = "kotlinx-
 androidx-room-runtime = { group = "androidx.room", name = "room-runtime", version.ref = "room" }
 androidx-room-ktx = { group = "androidx.room", name = "room-ktx", version.ref = "room" }
 androidx-room-compiler = { group = "androidx.room", name = "room-compiler", version.ref = "room" }
+androidx-documentfile = { group = "androidx.documentfile", name = "documentfile", version.ref = "documentfile" }
 junit = { group = "junit", name = "junit", version.ref = "junit" }
 truth = { group = "com.google.truth", name = "truth", version.ref = "truth" }
 
