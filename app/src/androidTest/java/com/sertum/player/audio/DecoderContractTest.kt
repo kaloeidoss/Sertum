@@ -98,8 +98,9 @@ class DecoderContractTest {
     fun media3EdgeFixtures_stillPassTheBackendContract() {
         // 48 kHz/16-bit FLAC.
         decodeAndAssert("flac-edge", asset("bear.flac"), expectedRate = 48_000, expectedDepth = 16)
-        // 48 kHz/32-bit FLAC: the router asks Media3 to transcode to 16-bit PCM.
-        decodeAndAssert("flac-32", asset("bear_32bit.flac"), expectedRate = 48_000, expectedDepth = 16)
+        // 48 kHz/32-bit FLAC: Media3 converts to float PCM, then the adapter
+        // packs it to 24-bit PCM for the AAudio backend.
+        decodeAndAssert("flac-32", asset("bear_32bit.flac"), expectedRate = 48_000, expectedDepth = 24)
         // Uncommon 44 kHz/16-bit FLAC.
         decodeAndAssert("flac-uncommon", asset("bear_uncommon_sample_rate.flac"), expectedRate = 44_000, expectedDepth = 16)
         // ALAC fixture; exact rate is not asserted, but decode must complete into PCM.
@@ -188,18 +189,29 @@ class DecoderContractTest {
     private class CapturingBackend : AudioOutputBackend {
         val specs = java.util.concurrent.CopyOnWriteArrayList<StreamSpec>()
         val totalBytes = java.util.concurrent.atomic.AtomicLong(0)
+        private val totalFrames = java.util.concurrent.atomic.AtomicLong(0)
+        @Volatile
+        private var sampleRate = 48_000
 
         override val capabilities = BackendCapabilities(supportsHardwareVolume = false, isExclusive = true)
 
         override fun open(spec: StreamSpec): Result<Unit> {
             specs.add(spec)
+            sampleRate = spec.sampleRate
             return Result.success(Unit)
         }
 
         override fun writePcm(frame: ByteArray, offset: Int, length: Int): Result<Unit> {
             totalBytes.addAndGet(length.toLong())
+            val bytesPerSample = if (specs.lastOrNull()?.bitDepth == 24) 3 else 2
+            val channels = specs.lastOrNull()?.channelCount ?: 2
+            totalFrames.addAndGet((length / (bytesPerSample * channels)).toLong())
             return Result.success(Unit)
         }
+
+        override fun getPositionUs(): Long = totalFrames.get() * 1_000_000L / sampleRate
+
+        override fun getBufferSizeInFrames(): Int = 1_024
 
         override fun pause(): Result<Unit> = Result.success(Unit)
         override fun play(): Result<Unit> = Result.success(Unit)
@@ -256,14 +268,15 @@ class DecoderContractTest {
             fun be16(v: Int) {
                 out.write((v shr 8) and 0xFF); out.write(v and 0xFF)
             }
-            val commSize = 18 + 2 // numChannels + frames + bits + 80-bit rate
-            ascii("FORM"); be32(4 + 8 + commSize + 8 + dataSize); ascii("AIFF")
+            val commSize = 18 // channels + sample frames + sample size + 80-bit rate
+            // FORM size = AIFF(4) + COMM(8 + commSize) + SSND(8 + dataSize)
+            ascii("FORM"); be32(4 + (8 + commSize) + (8 + dataSize)); ascii("AIFF")
             ascii("COMM"); be32(commSize); be16(2); be32(frames); be16(bitDepth)
             // 80-bit IEEE 754 extended float for the sample rate.
             val exponent = 16383 + 15
             val mantissa = sampleRate.toLong() shl 47
-            be16(exponent); out.write(((mantissa shr 56) and 0xFF).toInt())
-            for (shift in intArrayOf(48, 40, 32, 24, 16, 8, 0)) {
+            be16(exponent)
+            for (shift in intArrayOf(56, 48, 40, 32, 24, 16, 8, 0)) {
                 out.write(((mantissa shr shift) and 0xFF).toInt())
             }
             ascii("SSND"); be32(8 + dataSize); be32(0); be32(0)

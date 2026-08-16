@@ -30,7 +30,7 @@ class BackendAudioOutput(
 
     init {
         val bitDepth = when (outputConfig.encoding) {
-            C.ENCODING_PCM_24BIT -> 24
+            C.ENCODING_PCM_24BIT, C.ENCODING_PCM_FLOAT -> 24
             else -> 16
         }
         val channels = Integer.bitCount(outputConfig.channelMask).coerceAtLeast(1)
@@ -49,15 +49,45 @@ class BackendAudioOutput(
     override fun write(buffer: ByteBuffer, channelCount: Int, presentationTimeUs: Long): Boolean {
         if (released) return false
         if (!buffer.hasRemaining()) return true
-        val bytes = ByteArray(buffer.remaining())
-        buffer.get(bytes)
-        backend.writePcm(bytes, 0, bytes.size).getOrElse {
+        val pcmBytes = when (outputConfig.encoding) {
+            C.ENCODING_PCM_FLOAT -> floatToPacked24Le(buffer)
+            else -> {
+                val bytes = ByteArray(buffer.remaining())
+                buffer.get(bytes)
+                bytes
+            }
+        }
+        if (pcmBytes.isEmpty()) return true
+        backend.writePcm(pcmBytes, 0, pcmBytes.size).getOrElse {
             throw androidx.media3.exoplayer.audio.AudioOutput.WriteException(
                 PlaybackException.ERROR_CODE_AUDIO_TRACK_WRITE_FAILED,
                 true,
             )
         }
         return true
+    }
+
+    /**
+     * Media3 float PCM is native-endian (little-endian on Android) IEEE-754.
+     * Packed 24-bit ints keep 24-bit source material bit-exact because every
+     * 24-bit integer is exactly representable in float32.
+     */
+    private fun floatToPacked24Le(buffer: ByteBuffer): ByteArray {
+        val floatView = buffer.asFloatBuffer()
+        val out = ByteArray(floatView.remaining() * 3)
+        var outIndex = 0
+        while (floatView.hasRemaining()) {
+            val sample = floatView.get().coerceIn(-1f, 1f)
+            val scaled = when {
+                sample >= 1f -> MAX_24BIT
+                sample <= -1f -> -MAX_24BIT - 1
+                else -> (sample * (MAX_24BIT + 1)).toInt()
+            }
+            out[outIndex++] = (scaled and 0xFF).toByte()
+            out[outIndex++] = ((scaled shr 8) and 0xFF).toByte()
+            out[outIndex++] = ((scaled shr 16) and 0xFF).toByte()
+        }
+        return out
     }
 
     override fun flush() {
@@ -116,4 +146,8 @@ class BackendAudioOutput(
     override fun setAuxEffectSendLevel(sendLevel: Float) = Unit
 
     override fun setPreferredDevice(preferredDevice: AudioDeviceInfo?) = Unit
+
+    companion object {
+        private const val MAX_24BIT = 8_388_607
+    }
 }

@@ -32,11 +32,19 @@ class RoutedAudioOutputProvider(context: Context) :
         formatConfig: androidx.media3.exoplayer.audio.AudioOutputProvider.FormatConfig,
     ): androidx.media3.exoplayer.audio.AudioOutputProvider.FormatSupport {
         if (!isExclusiveRoute()) return super.getFormatSupport(formatConfig)
+        // Direct support for the PCM families the AAudio backend consumes.
+        // 24/32-bit linear PCM is first converted to float by Media3's
+        // DefaultAudioSink processing pipeline, and BackendAudioOutput
+        // converts float back to packed 24-bit PCM losslessly for 24-bit
+        // sources. Compressed formats must be decoded by MediaCodec, so they
+        // are reported unsupported here (never pass compressed bytes through).
         val level = when (formatConfig.format.pcmEncoding) {
-            C.ENCODING_PCM_16BIT, C.ENCODING_PCM_24BIT ->
-                androidx.media3.exoplayer.audio.AudioOutputProvider.FORMAT_SUPPORTED_DIRECTLY
+            C.ENCODING_PCM_16BIT,
+            C.ENCODING_PCM_24BIT,
+            C.ENCODING_PCM_FLOAT,
+            -> androidx.media3.exoplayer.audio.AudioOutputProvider.FORMAT_SUPPORTED_DIRECTLY
             else ->
-                androidx.media3.exoplayer.audio.AudioOutputProvider.FORMAT_SUPPORTED_WITH_TRANSCODING
+                androidx.media3.exoplayer.audio.AudioOutputProvider.FORMAT_UNSUPPORTED
         }
         return androidx.media3.exoplayer.audio.AudioOutputProvider.FormatSupport.Builder()
             .setFormatSupportLevel(level)
@@ -49,6 +57,7 @@ class RoutedAudioOutputProvider(context: Context) :
         if (!isExclusiveRoute()) return super.getOutputConfig(formatConfig)
         val encoding = when (formatConfig.format.pcmEncoding) {
             C.ENCODING_PCM_24BIT -> C.ENCODING_PCM_24BIT
+            C.ENCODING_PCM_FLOAT -> C.ENCODING_PCM_FLOAT
             else -> C.ENCODING_PCM_16BIT
         }
         val channelMask = when (formatConfig.format.channelCount) {
