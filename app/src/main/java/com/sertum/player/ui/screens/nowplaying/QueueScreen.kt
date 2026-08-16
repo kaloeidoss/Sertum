@@ -1,5 +1,6 @@
 package com.sertum.player.ui.screens.nowplaying
 
+import androidx.compose.foundation.gestures.detectVerticalDragGestures
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
@@ -22,6 +23,7 @@ import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
@@ -41,7 +43,12 @@ fun QueueScreen(onBack: (() -> Unit)? = null) {
 
     Column(Modifier.fillMaxSize()) {
         Row(
-            Modifier.fillMaxWidth().padding(start = 8.dp, end = 16.dp, top = 8.dp),
+            Modifier
+                .fillMaxWidth()
+                .padding(start = 8.dp, end = 16.dp, top = 8.dp)
+                .then(
+                    if (onBack != null) Modifier.dragDownToDismiss(onBack) else Modifier,
+                ),
             verticalAlignment = Alignment.CenterVertically,
         ) {
             if (onBack != null) {
@@ -110,4 +117,13 @@ fun QueueScreen(onBack: (() -> Unit)? = null) {
             }
         }
     }
+}
+
+private fun Modifier.dragDownToDismiss(onClose: () -> Unit): Modifier = pointerInput(onClose) {
+    var totalDrag = 0f
+    detectVerticalDragGestures(
+        onDragStart = { totalDrag = 0f },
+        onVerticalDrag = { _, dragAmount -> totalDrag += dragAmount },
+        onDragEnd = { if (totalDrag > 200f) onClose() },
+    )
 }

@@ -11,6 +11,7 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.QueueMusic
 import androidx.compose.material.icons.filled.SkipNext
@@ -31,11 +32,15 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
+import coil3.compose.AsyncImage
 import com.sertum.player.R
 import com.sertum.player.SertumApplication
+import com.sertum.player.data.covers.CoverResolver
 import com.sertum.player.ui.components.UsbBadge
 import com.sertum.player.ui.playback.OutputMode
 import com.sertum.player.ui.playback.PlaybackStateHolder
@@ -50,18 +55,29 @@ fun NowPlayingScreen(onOpenQueue: () -> Unit) {
     val state by PlaybackStateHolder.state.collectAsState()
     val controller = (LocalContext.current.applicationContext as SertumApplication).playbackController
     Column(Modifier.fillMaxSize().padding(24.dp)) {
+        val coverRef = state.coverRef?.takeUnless { it == CoverResolver.PLACEHOLDER_REF }
         Box(
             Modifier
                 .fillMaxWidth()
                 .aspectRatio(1f)
+                .clip(RoundedCornerShape(16.dp))
                 .background(SurfaceBlack, MaterialTheme.shapes.large),
             contentAlignment = Alignment.Center,
         ) {
-            Text(
-                text = state.trackTitle.ifBlank { stringResource(R.string.no_track_playing) }.take(1).uppercase(),
-                style = MaterialTheme.typography.displayLarge,
-                color = MaterialTheme.colorScheme.primary,
-            )
+            if (coverRef != null) {
+                AsyncImage(
+                    model = coverRef,
+                    contentDescription = null,
+                    contentScale = ContentScale.Crop,
+                    modifier = Modifier.fillMaxSize(),
+                )
+            } else {
+                Text(
+                    text = state.trackTitle.ifBlank { stringResource(R.string.no_track_playing) }.take(1).uppercase(),
+                    style = MaterialTheme.typography.displayLarge,
+                    color = MaterialTheme.colorScheme.primary,
+                )
+            }
         }
 
         Spacer(Modifier.weight(1f))

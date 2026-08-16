@@ -11,6 +11,7 @@ data class PlaybackUiState(
     val trackTitle: String = "",
     val artist: String = "",
     val album: String = "",
+    val coverRef: String? = null,
     val isPlaying: Boolean = false,
     val positionMs: Long = 0,
     val durationMs: Long = 0,

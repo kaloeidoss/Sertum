@@ -34,6 +34,8 @@ import com.sertum.player.ui.theme.WarmGold
 fun SongsScreen() {
     val dao = (LocalContext.current.applicationContext as SertumApplication).database.libraryDao()
     val tracks by dao.observeTracks().collectAsState(initial = emptyList())
+    val albums by dao.observeAlbums().collectAsState(initial = emptyList())
+    val coverByAlbum = albums.associate { it.albumKey to it.coverRef }
     var query by remember { mutableStateOf("") }
     val visible = if (query.isBlank()) tracks else tracks.filter {
         it.title.contains(query, ignoreCase = true) ||
@@ -77,7 +79,10 @@ fun SongsScreen() {
                     TrackRow(
                         track = track,
                         onClick = {
-                            controller.playTracks(visible.map { it.toPlayable() }, startIndex = index)
+                            controller.playTracks(
+                                visible.map { it.toPlayable().copy(coverRef = coverByAlbum[it.albumKey]) },
+                                startIndex = index,
+                            )
                         },
                     )
                 }
@@ -92,6 +97,7 @@ fun TrackEntity.toPlayable(): PlayableTrack = PlayableTrack(
     title = title,
     artist = artist,
     album = albumTitle,
+    albumKey = albumKey,
 )
 
 @Composable

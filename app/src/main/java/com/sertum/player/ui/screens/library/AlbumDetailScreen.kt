@@ -99,7 +99,11 @@ fun AlbumDetailScreen(albumKey: String) {
                 OutlinedButton(
                     onClick = {
                         if (tracks.isNotEmpty()) {
-                            app.playbackController.playTracks(tracks.map { it.toPlayable() }, startIndex = 0)
+                            val coverRef = album?.coverRef
+                            app.playbackController.playTracks(
+                                tracks.map { it.toPlayable().copy(coverRef = coverRef) },
+                                startIndex = 0,
+                            )
                         }
                     },
                     enabled = tracks.isNotEmpty(),
@@ -144,7 +148,11 @@ fun AlbumDetailScreen(albumKey: String) {
             TrackRow(
                 track = track,
                 onClick = {
-                    app.playbackController.playTracks(tracks.map { it.toPlayable() }, startIndex = index)
+                    val coverRef = album?.coverRef
+                    app.playbackController.playTracks(
+                        tracks.map { it.toPlayable().copy(coverRef = coverRef) },
+                        startIndex = index,
+                    )
                 },
             )
         }

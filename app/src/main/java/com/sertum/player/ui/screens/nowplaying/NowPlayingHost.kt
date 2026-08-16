@@ -8,22 +8,21 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.saveable.rememberSaveable
-import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 
 /**
  * Full-player host: the player surface, with the queue as a second layer
  * that slides up over it and slides back down to reveal the player.
+ * [showQueue] is hoisted so the outer bottom sheet can refuse to dismiss
+ * while the queue layer is open.
  */
 @Composable
-fun NowPlayingHost() {
-    var showQueue by rememberSaveable { mutableStateOf(false) }
-
+fun NowPlayingHost(
+    showQueue: Boolean,
+    onShowQueueChange: (Boolean) -> Unit,
+) {
     Box(Modifier.fillMaxSize()) {
-        NowPlayingScreen(onOpenQueue = { showQueue = true })
+        NowPlayingScreen(onOpenQueue = { onShowQueueChange(true) })
 
         AnimatedVisibility(
             visible = showQueue,
@@ -34,7 +33,7 @@ fun NowPlayingHost() {
                 color = MaterialTheme.colorScheme.background,
                 modifier = Modifier.fillMaxSize(),
             ) {
-                QueueScreen(onBack = { showQueue = false })
+                QueueScreen(onBack = { onShowQueueChange(false) })
             }
         }
     }

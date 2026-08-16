@@ -33,9 +33,13 @@ import com.sertum.player.ui.theme.WarmGold
 @Composable
 fun ArtistsScreen(onArtistClick: (String) -> Unit = {}) {
     val dao = (LocalContext.current.applicationContext as SertumApplication).database.libraryDao()
-    val artists by dao.observeArtists().collectAsState(initial = emptyList())
+    val artists by dao.observeArtists().collectAsState(initial = null as List<ArtistEntity>?)
     var query by remember { mutableStateOf("") }
-    val visible = if (query.isBlank()) artists else artists.filter { it.name.contains(query, ignoreCase = true) }
+    val visible = if (query.isBlank()) {
+        artists.orEmpty()
+    } else {
+        artists.orEmpty().filter { it.name.contains(query, ignoreCase = true) }
+    }
     androidx.compose.foundation.layout.Column(Modifier.fillMaxSize()) {
         OutlinedTextField(
             value = query,
@@ -46,7 +50,11 @@ fun ArtistsScreen(onArtistClick: (String) -> Unit = {}) {
         )
         val context = LocalContext.current
         val granted = hasMediaPermission(context)
-        if (!granted) {
+        if (artists == null) {
+            // First frame after returning to this page: keep it blank instead
+            // of flashing the "no artists" empty state before Room replays.
+            Box(Modifier.fillMaxSize())
+        } else if (!granted) {
             EmptyLibrary(
                 label = stringResource(R.string.nav_artists),
                 actionText = stringResource(R.string.open_app_settings),

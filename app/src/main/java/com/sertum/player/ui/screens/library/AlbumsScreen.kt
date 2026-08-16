@@ -38,10 +38,14 @@ import coil3.compose.AsyncImage
 @Composable
 fun AlbumsScreen(onAlbumClick: (String) -> Unit = {}) {
     val dao = (LocalContext.current.applicationContext as SertumApplication).database.libraryDao()
-    val albums by dao.observeAlbums().collectAsState(initial = emptyList())
+    val albums by dao.observeAlbums().collectAsState(initial = null as List<AlbumEntity>?)
     var query by remember { mutableStateOf("") }
-    val visible = if (query.isBlank()) albums else albums.filter {
-        it.title.contains(query, ignoreCase = true) || it.albumArtist.contains(query, ignoreCase = true)
+    val visible = if (query.isBlank()) {
+        albums.orEmpty()
+    } else {
+        albums.orEmpty().filter {
+            it.title.contains(query, ignoreCase = true) || it.albumArtist.contains(query, ignoreCase = true)
+        }
     }
     androidx.compose.foundation.layout.Column(Modifier.fillMaxSize()) {
         OutlinedTextField(
@@ -53,7 +57,11 @@ fun AlbumsScreen(onAlbumClick: (String) -> Unit = {}) {
         )
         val context = LocalContext.current
         val granted = hasMediaPermission(context)
-        if (!granted) {
+        if (albums == null) {
+            // First frame after returning to this page: keep it blank instead
+            // of flashing the empty-library state before Room replays.
+            Box(Modifier.fillMaxSize())
+        } else if (!granted) {
             EmptyLibrary(
                 label = stringResource(R.string.nav_albums),
                 actionText = stringResource(R.string.open_app_settings),

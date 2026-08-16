@@ -1,7 +1,8 @@
 package com.sertum.player.ui
 
-import androidx.compose.animation.EnterTransition
-import androidx.compose.animation.ExitTransition
+import androidx.compose.animation.core.tween
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxHeight
@@ -19,6 +20,7 @@ import androidx.compose.material3.NavigationBar
 import androidx.compose.material3.NavigationBarItem
 import androidx.compose.material3.NavigationBarItemDefaults
 import androidx.compose.material3.Scaffold
+import androidx.compose.material3.SheetValue
 import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Text
@@ -71,6 +73,7 @@ fun SertumApp() {
     val currentRoute = backStack?.destination?.route
     var selectedTab by rememberSaveable { mutableIntStateOf(0) }
     var showNowPlaying by rememberSaveable { mutableStateOf(false) }
+    var showQueue by rememberSaveable { mutableStateOf(false) }
     val settings by com.sertum.player.ui.settings.SettingsStateHolder.state.collectAsState()
     val context = LocalContext.current
     val controller = (context.applicationContext as SertumApplication).playbackController
@@ -127,10 +130,10 @@ fun SertumApp() {
                 navController = navController,
                 startDestination = SertumDestinations.MAIN,
                 modifier = Modifier.padding(padding),
-                enterTransition = { EnterTransition.None },
-                exitTransition = { ExitTransition.None },
-                popEnterTransition = { EnterTransition.None },
-                popExitTransition = { ExitTransition.None },
+                enterTransition = { fadeIn(tween(120)) },
+                exitTransition = { fadeOut(tween(90)) },
+                popEnterTransition = { fadeIn(tween(120)) },
+                popExitTransition = { fadeOut(tween(90)) },
             ) {
                 composable(SertumDestinations.MAIN) {
                     MainTabs(
@@ -161,10 +164,20 @@ fun SertumApp() {
         if (showNowPlaying) {
             ModalBottomSheet(
                 onDismissRequest = { showNowPlaying = false },
-                sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true),
+                sheetState = rememberModalBottomSheetState(
+                    skipPartiallyExpanded = true,
+                    confirmValueChange = { target ->
+                        // Dragging the queue layer down must close only the
+                        // queue layer, never the whole player sheet.
+                        if (showQueue && target == SheetValue.Hidden) false else true
+                    },
+                ),
             ) {
                 Box(Modifier.fillMaxHeight(0.94f)) {
-                    NowPlayingHost()
+                    NowPlayingHost(
+                        showQueue = showQueue,
+                        onShowQueueChange = { showQueue = it },
+                    )
                 }
             }
         }

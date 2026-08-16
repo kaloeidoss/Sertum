@@ -52,6 +52,8 @@ data class PlayableTrack(
     val title: String,
     val artist: String?,
     val album: String?,
+    val albumKey: String? = null,
+    val coverRef: String? = null,
 )
 
 enum class UsbRecoveryState { NONE, DETACHED, RECOVERING, RECOVERED, FAILED }
@@ -418,6 +420,7 @@ class PlaybackCoordinator(
                 trackTitle = current?.title.orEmpty(),
                 artist = current?.artist ?: "—",
                 album = current?.album ?: "—",
+                coverRef = current?.coverRef,
                 isPlaying = player.isPlaying,
                 positionMs = player.currentPosition.coerceAtLeast(0L),
                 durationMs = if (player.duration > 0) player.duration else 0L,
