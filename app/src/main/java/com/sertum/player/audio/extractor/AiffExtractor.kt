@@ -11,6 +11,7 @@ import androidx.media3.extractor.ExtractorOutput
 import androidx.media3.extractor.PositionHolder
 import androidx.media3.extractor.SeekMap
 import androidx.media3.extractor.TrackOutput
+import android.util.Log
 import java.io.EOFException
 
 /**
@@ -24,6 +25,7 @@ import java.io.EOFException
 class AiffExtractor : Extractor {
 
     companion object {
+        private const val TAG = "SertumAiff"
         private const val STATE_HEADER = 0
         private const val STATE_CHUNKS = 1
         private const val STATE_DATA = 2
@@ -55,7 +57,11 @@ class AiffExtractor : Extractor {
     private var framesFed = 0L
     private var sampleRate = 1
 
-    override fun sniff(input: ExtractorInput): Boolean = sniffFormat(input)
+    override fun sniff(input: ExtractorInput): Boolean {
+        val result = sniffFormat(input)
+        Log.i(TAG, "sniff=$result")
+        return result
+    }
 
     override fun init(output: ExtractorOutput) {
         this.output = output
@@ -74,6 +80,7 @@ class AiffExtractor : Extractor {
         val header = ByteArray(12)
         if (!input.readFully(header, 0, 12, false)) return Extractor.RESULT_END_OF_INPUT
         state = STATE_CHUNKS
+        Log.i(TAG, "header read; entering chunks")
         return Extractor.RESULT_CONTINUE
     }
 
@@ -82,6 +89,7 @@ class AiffExtractor : Extractor {
         if (!input.readFully(chunkHeader, 0, 8, false)) return Extractor.RESULT_END_OF_INPUT
         val chunkId = String(chunkHeader, 0, 4, Charsets.US_ASCII)
         val chunkSize = readU32(chunkHeader, 4)
+        Log.i(TAG, "chunk=$chunkId size=$chunkSize")
 
         when (chunkId) {
             "COMM" -> {
@@ -119,6 +127,7 @@ class AiffExtractor : Extractor {
                 if (!input.readFully(ssnd, 0, 8, false)) return Extractor.RESULT_END_OF_INPUT
                 dataBytesRemaining = chunkSize - 8L
                 state = STATE_DATA
+                Log.i(TAG, "SSND dataBytesRemaining=$dataBytesRemaining frameBytes=$frameBytes bps=$bytesPerSample rate=$sampleRate")
             }
 
             else -> {
@@ -162,6 +171,7 @@ class AiffExtractor : Extractor {
             0,
             null,
         )
+        if (dataBytesRemaining <= 0) Log.i(TAG, "data finished framesFed=$framesFed")
         return if (dataBytesRemaining <= 0) Extractor.RESULT_END_OF_INPUT else Extractor.RESULT_CONTINUE
     }
 

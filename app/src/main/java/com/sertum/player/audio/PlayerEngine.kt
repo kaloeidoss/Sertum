@@ -6,6 +6,7 @@ import androidx.media3.common.AudioAttributes as M3AudioAttributes
 import androidx.media3.common.C
 import androidx.media3.common.MediaItem
 import androidx.media3.common.util.UnstableApi
+import androidx.media3.exoplayer.DefaultRenderersFactory
 import androidx.media3.exoplayer.ExoPlayer
 import androidx.media3.exoplayer.source.DefaultMediaSourceFactory
 import com.sertum.player.audio.backend.RoutedAudioOutputProvider
@@ -14,14 +15,19 @@ import com.sertum.player.audio.extractor.SertumExtractorsFactory
 /**
  * Owns the Media3 player. Audio output is routed by [router]:
  * system AudioTrack by default, AAudio EXCLUSIVE when the user selects
- * USB-exclusive mode (ADR-0001).
+ * USB-exclusive mode (ADR-0001). Float output keeps 24-bit sources
+ * bit-exact through the exclusive path (BackendAudioOutput packs float
+ * back to 24-bit PCM).
  */
 @androidx.annotation.OptIn(UnstableApi::class)
 class PlayerEngine(context: Context) {
 
     val router = RoutedAudioOutputProvider(context.applicationContext)
 
-    val player: ExoPlayer = ExoPlayer.Builder(context)
+    private val renderersFactory = DefaultRenderersFactory(context)
+        .setEnableAudioFloatOutput(true)
+
+    val player: ExoPlayer = ExoPlayer.Builder(context, renderersFactory)
         .setMediaSourceFactory(
             DefaultMediaSourceFactory(context, SertumExtractorsFactory()),
         )

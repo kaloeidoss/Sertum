@@ -53,6 +53,37 @@ class AiffExtractorTest {
         assertThat(output.data.toByteArray()).isEqualTo(toLittleEndian16(data))
     }
 
+    @Test
+    fun `parses runtime-style generated AIFF across the rate and depth matrix`() {
+        for (rate in intArrayOf(44_100, 48_000, 96_000, 192_000)) {
+            for (bits in intArrayOf(16, 24)) {
+                val frames = rate / 10
+                val bytesPerSample = bits / 8
+                val data = ByteArray(frames * 2 * bytesPerSample) // silent audio is fine
+                val aiff = buildAiff(rate, 2, bits, frames, data)
+
+                val input = FakeExtractorInput(aiff)
+                val output = FakeExtractorOutput()
+                val extractor = AiffExtractor()
+                assertThat(extractor.sniff(input)).isTrue()
+                extractor.init(output)
+                var result = Extractor.RESULT_CONTINUE
+                var guard = 0
+                while (result == Extractor.RESULT_CONTINUE && guard++ < 100_000) {
+                    result = extractor.read(input, PositionHolder())
+                }
+                extractor.release()
+
+                assertThat(result).isEqualTo(Extractor.RESULT_END_OF_INPUT)
+                assertThat(output.format?.sampleRate).isEqualTo(rate)
+                assertThat(output.format?.pcmEncoding).isEqualTo(
+                    if (bits == 16) C.ENCODING_PCM_16BIT else C.ENCODING_PCM_24BIT,
+                )
+                assertThat(output.data.size()).isEqualTo(data.size)
+            }
+        }
+    }
+
     private fun toLittleEndian16(be: ByteArray): ByteArray {
         val le = be.copyOf()
         var i = 0

@@ -131,7 +131,20 @@ class DecoderContractTest {
                 exclusiveBackend = backend
             }
             providers += provider!!
-            player = ExoPlayer.Builder(context)
+            val codecSelector = object : androidx.media3.exoplayer.mediacodec.MediaCodecSelector {
+                override fun getDecoderInfos(
+                    mimeType: String,
+                    requiresSecureDecoder: Boolean,
+                    requiresTunnelingDecoder: Boolean,
+                ): List<androidx.media3.exoplayer.mediacodec.MediaCodecInfo> =
+                    androidx.media3.exoplayer.mediacodec.MediaCodecSelector.DEFAULT
+                        .getDecoderInfos(mimeType, requiresSecureDecoder, requiresTunnelingDecoder)
+                        .sortedByDescending { it.hardwareAccelerated }
+            }
+            val renderersFactory = androidx.media3.exoplayer.DefaultRenderersFactory(context)
+                .setEnableAudioFloatOutput(true)
+                .setMediaCodecSelector(codecSelector)
+            player = ExoPlayer.Builder(context, renderersFactory)
                 .setMediaSourceFactory(DefaultMediaSourceFactory(context, SertumExtractorsFactory()))
                 .setAudioOutputProvider(provider!!)
                 .build()
