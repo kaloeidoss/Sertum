@@ -1,13 +1,18 @@
 package com.sertum.player
 
 import android.app.Application
+import android.content.ComponentName
 import android.content.pm.PackageManager
 import android.os.Build
+import androidx.core.content.ContextCompat
+import androidx.media3.session.MediaController
+import androidx.media3.session.SessionToken
 import androidx.room.Room
 import coil3.SingletonImageLoader
 import com.sertum.player.audio.PlaybackCoordinator
 import com.sertum.player.audio.PlayerEngine
 import com.sertum.player.audio.UsbHotplugController
+import com.sertum.player.audio.session.PlaybackService
 import com.sertum.player.data.covers.CoverStore
 import com.sertum.player.data.db.SertumDatabase
 import com.sertum.player.data.diagnostics.DiagnosticLevel
@@ -21,6 +26,7 @@ import java.io.File
 class SertumApplication : Application() {
 
     private var hotplugController: UsbHotplugController? = null
+    private var mediaController: MediaController? = null
 
     override fun onCreate() {
         super.onCreate()
@@ -34,6 +40,22 @@ class SertumApplication : Application() {
         if (hasMediaPermission()) {
             requestLibraryScan()
         }
+        ensureMediaController()
+    }
+
+    /**
+     * Media3 only posts the media notification and promotes the service to
+     * the foreground when at least one MediaController is connected to the
+     * session. Keep one alive for the whole process.
+     */
+    private fun ensureMediaController() {
+        if (mediaController != null) return
+        val token = SessionToken(this, ComponentName(this, PlaybackService::class.java))
+        val future = MediaController.Builder(this, token).buildAsync()
+        future.addListener(
+            { runCatching { mediaController = future.get() } },
+            ContextCompat.getMainExecutor(this),
+        )
     }
 
     private fun hasMediaPermission(): Boolean {
