@@ -45,14 +45,17 @@ class GaplessSmokeActivity : ComponentActivity() {
                     )
                 }
             })
-            coordinator.playTracks(
-                trackIds = listOf(1L, 2L, 3L),
-                uris = files.map { Uri.fromFile(it) },
-                startIndex = 0,
-            )
+            // ExoPlayer requires all player calls on the main thread.
+            runOnUiThread {
+                coordinator.playTracks(
+                    trackIds = listOf(1L, 2L, 3L),
+                    uris = files.map { Uri.fromFile(it) },
+                    startIndex = 0,
+                )
+            }
             Thread.sleep(12_000)
             Log.i("SertumSmoke", "=== gapless smoke done ===")
-            coordinator.release()
+            runOnUiThread { coordinator.release() }
             files.forEach { it.delete() }
             runOnUiThread { label.text = "Gapless smoke done; see logcat SertumSmoke" }
         }
