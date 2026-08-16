@@ -53,7 +53,11 @@ class SertumApplication : Application() {
         val token = SessionToken(this, ComponentName(this, PlaybackService::class.java))
         val future = MediaController.Builder(this, token).buildAsync()
         future.addListener(
-            { runCatching { mediaController = future.get() } },
+            {
+                runCatching { mediaController = future.get() }
+                    .onSuccess { android.util.Log.i("SertumSession", "controller connected") }
+                    .onFailure { android.util.Log.i("SertumSession", "controller failed: $it") }
+            },
             ContextCompat.getMainExecutor(this),
         )
     }

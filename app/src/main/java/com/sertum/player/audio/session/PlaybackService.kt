@@ -32,6 +32,15 @@ class PlaybackService : MediaSessionService() {
 
     override fun onGetSession(controllerInfo: MediaSession.ControllerInfo): MediaSession? = mediaSession
 
+    override fun onUpdateNotification(session: MediaSession, startInForegroundRequired: Boolean) {
+        android.util.Log.i(
+            "SertumSession",
+            "updateNotification foreground=$startInForegroundRequired playWhenReady=${session.player.playWhenReady} " +
+                "state=${session.player.playbackState} timelineEmpty=${session.player.currentTimeline.isEmpty}",
+        )
+        super.onUpdateNotification(session, startInForegroundRequired)
+    }
+
     override fun onDestroy() {
         mediaSession?.release()
         mediaSession = null
