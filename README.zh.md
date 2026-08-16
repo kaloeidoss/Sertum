@@ -6,7 +6,7 @@ Sertum 是一款完全离线、本地优先的 Android 音乐播放器，面向�
 
 ## 当前状态
 
-规划阶段（pre-alpha），核心开发尚未开始。迭代记录见 `CHANGELOG.md`。
+早期开发阶段。M0 已完成：仓库可构建出可运行的 Compose 应用骨架，并配有 CI（单元测试、lint、离线清单守卫）。尚未交付任何应用功能。迭代记录见 `CHANGELOG.md`。
 
 ## 规划的 V1 功能
 
@@ -28,8 +28,10 @@ Sertum 是一款完全离线、本地优先的 Android 音乐播放器，面向�
 
 ## 仓库结构
 
-- `app/` — Android 应用模块（未来）
-- `gradle/` — Gradle Wrapper 与构建工具（未来）
+- `app/` — Android 应用模块
+- `gradle/` — Gradle Wrapper 与版本目录
+- `scripts/` — 离线守卫与设备检查脚本
+- `.github/workflows/` — CI 流水线
 - `CHANGELOG.md` — 人类可读的迭代记录
 - `README.md` — 本文档的英文版
 - `LICENSE` — Apache License 2.0

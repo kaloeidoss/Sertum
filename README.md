@@ -6,7 +6,7 @@
 
 ## Status
 
-Planning phase (pre-alpha). Core development has not started yet. See `CHANGELOG.md` for human-readable iteration notes.
+Early development. M0 is complete: the repository builds a runnable Compose app skeleton with CI (unit tests, lint, offline-manifest guard). No app features have shipped yet. See `CHANGELOG.md` for human-readable iteration notes.
 
 ## Planned V1 features
 
@@ -28,8 +28,10 @@ Planning phase (pre-alpha). Core development has not started yet. See `CHANGELOG
 
 ## Repository layout
 
-- `app/` — Android application module (future)
-- `gradle/` — Gradle wrapper and build tooling (future)
+- `app/` — Android application module
+- `gradle/` — Gradle wrapper and version catalog
+- `scripts/` — offline guard and device check helpers
+- `.github/workflows/` — CI pipeline
 - `CHANGELOG.md` — human-readable iteration notes
 - `README.zh.md` — Simplified Chinese version of this document
 - `LICENSE` — Apache License 2.0
