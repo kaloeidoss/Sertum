@@ -146,6 +146,15 @@ class DecoderContractTest {
         val ended = CountDownLatch(1)
         val playerError = java.util.concurrent.atomic.AtomicReference<androidx.media3.common.PlaybackException?>(null)
         runOnMainSync {
+            activePlayer.addAnalyticsListener(object : androidx.media3.exoplayer.analytics.AnalyticsListener {
+                override fun onAudioDecoderInitialized(
+                    eventTime: androidx.media3.exoplayer.analytics.AnalyticsListener.EventTime,
+                    decoderName: String,
+                    initializationDurationMs: Long,
+                ) {
+                    android.util.Log.i("SertumCodec", "decoder=$decoderName")
+                }
+            })
             activePlayer.addListener(object : Player.Listener {
                 override fun onPlaybackStateChanged(playbackState: Int) {
                     if (playbackState == Player.STATE_ENDED) ended.countDown()
