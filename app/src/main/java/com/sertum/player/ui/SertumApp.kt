@@ -7,8 +7,10 @@ import androidx.compose.material.icons.filled.LibraryMusic
 import androidx.compose.material.icons.filled.Person
 import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material3.Icon
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.NavigationBar
 import androidx.compose.material3.NavigationBarItem
+import androidx.compose.material3.NavigationBarItemDefaults
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -59,7 +61,7 @@ fun SertumApp() {
             if (currentRoute in topLevel.map { it.route }) {
                 androidx.compose.foundation.layout.Column {
                     MiniPlayer(onExpand = { navController.navigate(SertumDestinations.NOW_PLAYING) })
-                    NavigationBar {
+                    NavigationBar(containerColor = MaterialTheme.colorScheme.surface) {
                         topLevel.forEach { dest ->
                             NavigationBarItem(
                                 selected = currentRoute == dest.route,
@@ -72,6 +74,13 @@ fun SertumApp() {
                                 },
                                 icon = dest.icon,
                                 label = { Text(dest.label) },
+                                colors = NavigationBarItemDefaults.colors(
+                                    selectedIconColor = com.sertum.player.ui.theme.WarmGold,
+                                    selectedTextColor = com.sertum.player.ui.theme.WarmGold,
+                                    indicatorColor = com.sertum.player.ui.theme.WarmGoldDim,
+                                    unselectedIconColor = MaterialTheme.colorScheme.onSurfaceVariant,
+                                    unselectedTextColor = MaterialTheme.colorScheme.onSurfaceVariant,
+                                ),
                             )
                         }
                     }
