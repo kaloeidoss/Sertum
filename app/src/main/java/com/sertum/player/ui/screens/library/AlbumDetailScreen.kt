@@ -8,7 +8,7 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Text
@@ -57,11 +57,22 @@ fun AlbumDetailScreen(albumKey: String) {
                 )
                 OutlinedButton(
                     onClick = {
+                        if (tracks.isNotEmpty()) {
+                            app.playbackController.playTracks(tracks.map { it.toPlayable() }, startIndex = 0)
+                        }
+                    },
+                    enabled = tracks.isNotEmpty(),
+                    modifier = Modifier.padding(top = 12.dp),
+                ) {
+                    Text("Play all")
+                }
+                OutlinedButton(
+                    onClick = {
                         pickCover.launch(
                             PickVisualMediaRequest(ActivityResultContracts.PickVisualMedia.ImageOnly),
                         )
                     },
-                    modifier = Modifier.padding(top = 12.dp),
+                    modifier = Modifier.padding(top = 8.dp),
                 ) {
                     Text(if (album?.coverRef != null) "Replace cover" else "Add cover")
                 }
@@ -81,8 +92,13 @@ fun AlbumDetailScreen(albumKey: String) {
                 }
             }
         }
-        items(tracks, key = { it.id }) { track ->
-            TrackRow(track)
+        itemsIndexed(tracks, key = { _, track -> track.id }) { index, track ->
+            TrackRow(
+                track = track,
+                onClick = {
+                    app.playbackController.playTracks(tracks.map { it.toPlayable() }, startIndex = index)
+                },
+            )
         }
     }
 }

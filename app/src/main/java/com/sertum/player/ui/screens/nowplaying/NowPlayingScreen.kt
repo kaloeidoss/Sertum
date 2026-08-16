@@ -23,9 +23,15 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableFloatStateOf
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
+import com.sertum.player.SertumApplication
 import com.sertum.player.ui.components.UsbBadge
 import com.sertum.player.ui.playback.OutputMode
 import com.sertum.player.ui.playback.PlaybackStateHolder
@@ -34,6 +40,7 @@ import com.sertum.player.ui.theme.SurfaceBlack
 @Composable
 fun NowPlayingScreen(onOpenQueue: () -> Unit) {
     val state by PlaybackStateHolder.state.collectAsState()
+    val controller = (LocalContext.current.applicationContext as SertumApplication).playbackController
     Column(Modifier.fillMaxSize().padding(24.dp)) {
         Box(
             Modifier
@@ -90,9 +97,21 @@ fun NowPlayingScreen(onOpenQueue: () -> Unit) {
             modifier = Modifier.padding(top = 8.dp),
         )
 
+        val displayedPosition = if (state.durationMs > 0) state.positionMs.toFloat() / state.durationMs else 0f
+        var dragging by remember { mutableStateOf(false) }
+        var dragValue by remember { mutableFloatStateOf(0f) }
         Slider(
-            value = if (state.durationMs > 0) state.positionMs.toFloat() / state.durationMs else 0f,
-            onValueChange = {},
+            value = if (dragging) dragValue else displayedPosition,
+            onValueChange = {
+                dragging = true
+                dragValue = it
+            },
+            onValueChangeFinished = {
+                if (state.durationMs > 0) {
+                    controller.seekTo((dragValue * state.durationMs).toLong())
+                }
+                dragging = false
+            },
             modifier = Modifier.padding(top = 24.dp),
         )
 
@@ -101,9 +120,11 @@ fun NowPlayingScreen(onOpenQueue: () -> Unit) {
             horizontalArrangement = androidx.compose.foundation.layout.Arrangement.Center,
             verticalAlignment = Alignment.CenterVertically,
         ) {
-            IconButton(onClick = {}) { Icon(Icons.Filled.SkipPrevious, contentDescription = "Previous") }
+            IconButton(onClick = { controller.skipToPrevious() }) {
+                Icon(Icons.Filled.SkipPrevious, contentDescription = "Previous")
+            }
             IconButton(
-                onClick = { PlaybackStateHolder.update { it.copy(isPlaying = !it.isPlaying) } },
+                onClick = { controller.togglePlayPause() },
                 modifier = Modifier.size(72.dp),
             ) {
                 Icon(
@@ -112,7 +133,9 @@ fun NowPlayingScreen(onOpenQueue: () -> Unit) {
                     modifier = Modifier.size(48.dp),
                 )
             }
-            IconButton(onClick = {}) { Icon(Icons.Filled.SkipNext, contentDescription = "Next") }
+            IconButton(onClick = { controller.skipToNext() }) {
+                Icon(Icons.Filled.SkipNext, contentDescription = "Next")
+            }
         }
     }
 }

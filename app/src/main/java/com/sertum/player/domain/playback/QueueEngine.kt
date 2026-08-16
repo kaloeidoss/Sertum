@@ -112,6 +112,14 @@ class QueueEngine(
         currentIndex = -1
     }
 
+    /** Synchronizes the queue cursor with an externally selected track (Media3 transition). */
+    fun seekTo(trackId: Long): Boolean {
+        val index = order.indexOfFirst { tracks[it] == trackId }
+        if (index < 0) return false
+        currentIndex = index
+        return true
+    }
+
     fun orderForTest(): List<Long> = order.map { tracks[it] }
 
     private fun rebuildOrder() {

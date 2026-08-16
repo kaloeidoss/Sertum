@@ -20,12 +20,15 @@ import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
+import com.sertum.player.SertumApplication
 import com.sertum.player.ui.playback.PlaybackStateHolder
 
 @Composable
 fun MiniPlayer(onExpand: () -> Unit) {
     val state by PlaybackStateHolder.state.collectAsState()
+    val controller = (LocalContext.current.applicationContext as SertumApplication).playbackController
     Surface(color = MaterialTheme.colorScheme.surface) {
         Row(
             Modifier
@@ -42,7 +45,7 @@ fun MiniPlayer(onExpand: () -> Unit) {
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                 )
             }
-            IconButton(onClick = { PlaybackStateHolder.update { it.copy(isPlaying = !it.isPlaying) } }) {
+            IconButton(onClick = { controller.togglePlayPause() }) {
                 Icon(
                     imageVector = if (state.isPlaying) Icons.Filled.Pause else Icons.Filled.PlayArrow,
                     contentDescription = if (state.isPlaying) "Pause" else "Play",

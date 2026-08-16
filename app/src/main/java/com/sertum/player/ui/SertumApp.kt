@@ -12,17 +12,23 @@ import androidx.compose.material3.NavigationBar
 import androidx.compose.material3.NavigationBarItem
 import androidx.compose.material3.NavigationBarItemDefaults
 import androidx.compose.material3.Scaffold
+import androidx.compose.material3.SnackbarHost
+import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalContext
 import androidx.navigation.NavType
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
 import androidx.navigation.navArgument
+import com.sertum.player.SertumApplication
 import com.sertum.player.ui.navigation.SertumDestinations
 import com.sertum.player.ui.screens.library.AlbumDetailScreen
 import com.sertum.player.ui.screens.library.AlbumsScreen
@@ -54,9 +60,22 @@ fun SertumApp() {
     val backStack by navController.currentBackStackEntryAsState()
     val currentRoute = backStack?.destination?.route
     val settings by com.sertum.player.ui.settings.SettingsStateHolder.state.collectAsState()
+    val context = LocalContext.current
+    val controller = (context.applicationContext as SertumApplication).playbackController
+    val snackbarHostState = remember { SnackbarHostState() }
+    val userMessage by controller.userMessage.collectAsState()
+
+    LaunchedEffect(userMessage) {
+        val message = userMessage
+        if (!message.isNullOrBlank()) {
+            snackbarHostState.showSnackbar(message)
+            controller.consumeUserMessage()
+        }
+    }
 
     SertumTheme(darkTheme = settings.darkTheme) {
         Scaffold(
+        snackbarHost = { SnackbarHost(snackbarHostState) },
         bottomBar = {
             if (currentRoute in topLevel.map { it.route }) {
                 androidx.compose.foundation.layout.Column {

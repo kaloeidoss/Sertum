@@ -12,6 +12,12 @@ interface AudioOutputBackend {
     fun stop(): Result<Unit>
     fun release()
     fun onVolumeChanged(volume01: Float)
+
+    /** Playback-head position in microseconds; backends without a head return 0. */
+    fun getPositionUs(): Long = 0L
+
+    /** Backend buffer size in frames; 0 means "not applicable / unknown". */
+    fun getBufferSizeInFrames(): Int = 0
 }
 
 data class StreamSpec(

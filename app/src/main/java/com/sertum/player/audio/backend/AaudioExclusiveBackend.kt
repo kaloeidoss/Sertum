@@ -97,6 +97,17 @@ class AaudioExclusiveBackend : AudioOutputBackend {
         // Software volume is intentionally not applied on this path (PRD 7.3).
     }
 
+    override fun getPositionUs(): Long {
+        val active = handle
+        if (active == 0L) return 0L
+        val framesRead = AaudioNative.nativeGetFramesRead(active)
+        val rate = streamInfo.actualRate.takeIf { it > 0 } ?: spec?.sampleRate ?: 48_000
+        return framesRead * 1_000_000L / rate
+    }
+
+    override fun getBufferSizeInFrames(): Int =
+        streamInfo.framesPerBurst.takeIf { it > 0 }?.times(2) ?: 0
+
     private fun close() {
         if (handle != 0L) {
             AaudioNative.nativeClose(handle)

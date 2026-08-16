@@ -19,4 +19,5 @@ object AaudioNative {
     external fun nativeGetDeviceId(handle: Long): Int
     external fun nativeGetPerformanceMode(handle: Long): Int
     external fun nativeGetFramesPerBurst(handle: Long): Int
+    external fun nativeGetFramesRead(handle: Long): Long
 }

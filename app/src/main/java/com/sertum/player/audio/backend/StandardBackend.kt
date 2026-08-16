@@ -55,4 +55,6 @@ class StandardBackend : AudioOutputBackend {
     override fun onVolumeChanged(volume01: Float) {
         // System volume is applied by AudioTrack itself on the standard path.
     }
+
+    override fun getPositionUs(): Long = sink?.getCurrentPositionUs(false) ?: 0L
 }

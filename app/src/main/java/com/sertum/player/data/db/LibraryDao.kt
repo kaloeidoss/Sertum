@@ -58,6 +58,18 @@ interface LibraryDao {
     @Query("DELETE FROM tracks WHERE uri NOT IN (:uris)")
     suspend fun deleteTracksNotIn(uris: List<String>)
 
+    @Query("UPDATE tracks SET isPlayable = 0 WHERE id = :trackId")
+    suspend fun markTrackUnplayable(trackId: Long)
+
     @Query("SELECT uri FROM tracks")
     suspend fun allTrackUris(): List<String>
+
+    @Query("SELECT * FROM playback_positions WHERE trackId = :trackId")
+    suspend fun resumePosition(trackId: Long): PlaybackPositionEntity?
+
+    @Upsert
+    suspend fun putResumePosition(position: PlaybackPositionEntity)
+
+    @Query("DELETE FROM playback_positions WHERE updatedAtEpochMs < :cutoffEpochMs")
+    suspend fun pruneResumePositions(cutoffEpochMs: Long): Int
 }

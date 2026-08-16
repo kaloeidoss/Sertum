@@ -25,6 +25,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
+import com.sertum.player.SertumApplication
 import com.sertum.player.ui.playback.OutputMode
 import com.sertum.player.ui.settings.LanguageOption
 import com.sertum.player.ui.settings.SettingsStateHolder
@@ -33,12 +34,24 @@ import com.sertum.player.ui.settings.SettingsStateHolder
 fun SettingsScreen() {
     val state by SettingsStateHolder.state.collectAsState()
     val context = LocalContext.current
+    val app = context.applicationContext as SertumApplication
     val treeLauncher = rememberLauncherForActivityResult(ActivityResultContracts.OpenDocumentTree()) { uri ->
         if (uri != null) {
             context.contentResolver.takePersistableUriPermission(
                 uri,
                 Intent.FLAG_GRANT_READ_URI_PERMISSION,
             )
+        }
+    }
+    val exportLauncher = rememberLauncherForActivityResult(
+        ActivityResultContracts.CreateDocument("text/plain"),
+    ) { uri ->
+        if (uri != null) {
+            runCatching {
+                context.contentResolver.openOutputStream(uri)?.use { out ->
+                    out.write(app.diagnosticsStore.exportText().toByteArray(Charsets.UTF_8))
+                }
+            }
         }
     }
 
@@ -77,8 +90,40 @@ fun SettingsScreen() {
             RadioRow(
                 label = label,
                 selected = state.outputMode == mode,
-                onClick = { SettingsStateHolder.update { it.copy(outputMode = mode) } },
+                onClick = {
+                    SettingsStateHolder.update { it.copy(outputMode = mode) }
+                    app.playbackController.switchOutputMode(mode)
+                },
             )
+        }
+
+        SectionTitle("Background playback")
+        Text(
+            text = "On HyperOS/MIUI, allow Sertum in battery optimization and autostart " +
+                "settings so playback keeps running with the screen off.",
+            style = MaterialTheme.typography.bodyMedium,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+        )
+        OutlinedButton(
+            onClick = {
+                context.startActivity(Intent(Settings.ACTION_IGNORE_BATTERY_OPTIMIZATION_SETTINGS))
+            },
+            modifier = Modifier.padding(top = 8.dp),
+        ) {
+            Text("Battery optimization")
+        }
+        OutlinedButton(
+            onClick = {
+                context.startActivity(
+                    Intent(
+                        Settings.ACTION_APPLICATION_DETAILS_SETTINGS,
+                        Uri.parse("package:" + context.packageName),
+                    ),
+                )
+            },
+            modifier = Modifier.padding(top = 8.dp),
+        ) {
+            Text("App details / autostart")
         }
 
         SectionTitle("Language")
@@ -109,8 +154,16 @@ fun SettingsScreen() {
             style = MaterialTheme.typography.bodyMedium,
             color = MaterialTheme.colorScheme.onSurfaceVariant,
         )
+        val diagnostics = app.diagnosticsStore.counts
+        Text(
+            text = "Diagnostics: ${diagnostics.totalEntries} entries · ${diagnostics.totalErrors} errors · " +
+                "${diagnostics.fileCount} day files (rolling ${7} days)",
+            style = MaterialTheme.typography.bodyMedium,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+            modifier = Modifier.padding(top = 4.dp),
+        )
         OutlinedButton(
-            onClick = { /* diagnostics export lands in M5 */ },
+            onClick = { exportLauncher.launch("sertum-diagnostics.txt") },
             modifier = Modifier.padding(top = 8.dp),
         ) {
             Text("Export diagnostics")

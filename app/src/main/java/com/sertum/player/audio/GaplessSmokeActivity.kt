@@ -28,7 +28,13 @@ class GaplessSmokeActivity : ComponentActivity() {
         started = true
 
         val engine = PlayerEngine(this)
-        val coordinator = PlaybackCoordinator(engine, InMemoryResumePositionStore())
+        val diagnostics = com.sertum.player.data.diagnostics.DiagnosticsStore(File(cacheDir, "smoke-diagnostics"))
+        val coordinator = PlaybackCoordinator(
+            context = this,
+            engine = engine,
+            resumeStore = InMemoryResumePositionStore(),
+            diagnostics = diagnostics,
+        )
         val startMs = SystemClock.elapsedRealtime()
         engine.player.addListener(object : Player.Listener {
             override fun onMediaItemTransition(mediaItem: androidx.media3.common.MediaItem?, reason: Int) {
@@ -49,8 +55,11 @@ class GaplessSmokeActivity : ComponentActivity() {
             // ExoPlayer requires all player calls on the main thread.
             runOnUiThread {
                 coordinator.playTracks(
-                    trackIds = listOf(1L, 2L, 3L),
-                    uris = files.map { Uri.fromFile(it) },
+                    listOf(
+                        PlayableTrack(1L, Uri.fromFile(files[0]), "smoke-a", null, null),
+                        PlayableTrack(2L, Uri.fromFile(files[1]), "smoke-b", null, null),
+                        PlayableTrack(3L, Uri.fromFile(files[2]), "smoke-c", null, null),
+                    ),
                     startIndex = 0,
                 )
             }
