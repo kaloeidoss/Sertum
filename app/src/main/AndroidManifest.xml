@@ -23,11 +23,11 @@
 
         <activity
             android:name=".spike1.Spike1Activity"
-            android:exported="false" />
+            android:exported="true" />
 
         <activity
             android:name=".spike2.Spike2Activity"
-            android:exported="false" />
+            android:exported="true" />
     </application>
 
 </manifest>
