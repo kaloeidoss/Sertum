@@ -50,7 +50,11 @@ class BackendAudioOutput(
         if (released) return false
         if (!buffer.hasRemaining()) return true
         val pcmBytes = when (outputConfig.encoding) {
-            C.ENCODING_PCM_FLOAT -> floatToPacked24Le(buffer)
+            C.ENCODING_PCM_FLOAT -> {
+                val bytes = ByteArray(buffer.remaining())
+                buffer.get(bytes)
+                PcmConversion.float32ToPacked24Le(bytes)
+            }
             else -> {
                 val bytes = ByteArray(buffer.remaining())
                 buffer.get(bytes)
@@ -65,29 +69,6 @@ class BackendAudioOutput(
             )
         }
         return true
-    }
-
-    /**
-     * Media3 float PCM is native-endian (little-endian on Android) IEEE-754.
-     * Packed 24-bit ints keep 24-bit source material bit-exact because every
-     * 24-bit integer is exactly representable in float32.
-     */
-    private fun floatToPacked24Le(buffer: ByteBuffer): ByteArray {
-        val floatView = buffer.asFloatBuffer()
-        val out = ByteArray(floatView.remaining() * 3)
-        var outIndex = 0
-        while (floatView.hasRemaining()) {
-            val sample = floatView.get().coerceIn(-1f, 1f)
-            val scaled = when {
-                sample >= 1f -> MAX_24BIT
-                sample <= -1f -> -MAX_24BIT - 1
-                else -> (sample * (MAX_24BIT + 1)).toInt()
-            }
-            out[outIndex++] = (scaled and 0xFF).toByte()
-            out[outIndex++] = ((scaled shr 8) and 0xFF).toByte()
-            out[outIndex++] = ((scaled shr 16) and 0xFF).toByte()
-        }
-        return out
     }
 
     override fun flush() {
@@ -146,8 +127,4 @@ class BackendAudioOutput(
     override fun setAuxEffectSendLevel(sendLevel: Float) = Unit
 
     override fun setPreferredDevice(preferredDevice: AudioDeviceInfo?) = Unit
-
-    companion object {
-        private const val MAX_24BIT = 8_388_607
-    }
 }
