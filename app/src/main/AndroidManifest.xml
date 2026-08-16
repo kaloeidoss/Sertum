@@ -26,6 +26,10 @@
             android:exported="true" />
 
         <activity
+            android:name=".spike1.Spike1NativeActivity"
+            android:exported="true" />
+
+        <activity
             android:name=".spike2.Spike2Activity"
             android:exported="true" />
     </application>
