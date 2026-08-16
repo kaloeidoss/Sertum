@@ -27,24 +27,25 @@ class GaplessSmokeActivity : ComponentActivity() {
         if (started) return
         started = true
 
+        val engine = PlayerEngine(this)
+        val coordinator = PlaybackCoordinator(engine, InMemoryResumePositionStore())
+        val startMs = SystemClock.elapsedRealtime()
+        engine.player.addListener(object : Player.Listener {
+            override fun onMediaItemTransition(mediaItem: androidx.media3.common.MediaItem?, reason: Int) {
+                val t = SystemClock.elapsedRealtime() - startMs
+                Log.i(
+                    "SertumSmoke",
+                    "transition t=${t}ms reason=$reason item=$mediaItem",
+                )
+            }
+        })
+
         thread {
             val files = listOf(
                 writeWav(44_100, 440, 3),
                 writeWav(44_100, 880, 3),
                 writeWav(48_000, 440, 3),
             )
-            val engine = PlayerEngine(this)
-            val coordinator = PlaybackCoordinator(engine, InMemoryResumePositionStore())
-            val startMs = SystemClock.elapsedRealtime()
-            engine.player.addListener(object : Player.Listener {
-                override fun onMediaItemTransition(mediaItem: androidx.media3.common.MediaItem?, reason: Int) {
-                    val t = SystemClock.elapsedRealtime() - startMs
-                    Log.i(
-                        "SertumSmoke",
-                        "transition t=${t}ms reason=$reason item=$mediaItem",
-                    )
-                }
-            })
             // ExoPlayer requires all player calls on the main thread.
             runOnUiThread {
                 coordinator.playTracks(
