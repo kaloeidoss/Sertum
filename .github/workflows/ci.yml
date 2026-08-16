@@ -28,9 +28,9 @@ jobs:
       - name: Make gradlew executable
         run: chmod +x gradlew
 
-      - name: Offline manifest guard
+      - name: Privacy and permission audit
         shell: pwsh
-        run: ./scripts/check_manifest_offline.ps1
+        run: ./scripts/privacy_audit.ps1
 
       - name: Unit tests
         run: ./gradlew testDebugUnitTest
