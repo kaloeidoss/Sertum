@@ -26,6 +26,9 @@ import com.sertum.player.ui.screens.library.AlbumsScreen
 import com.sertum.player.ui.screens.library.ArtistDetailScreen
 import com.sertum.player.ui.screens.library.ArtistsScreen
 import com.sertum.player.ui.screens.library.SongsScreen
+import com.sertum.player.ui.screens.nowplaying.MiniPlayer
+import com.sertum.player.ui.screens.nowplaying.NowPlayingScreen
+import com.sertum.player.ui.screens.nowplaying.QueueScreen
 import com.sertum.player.ui.screens.settings.SettingsScreen
 
 private data class TopLevelDestination(
@@ -50,20 +53,23 @@ fun SertumApp() {
     Scaffold(
         bottomBar = {
             if (currentRoute in topLevel.map { it.route }) {
-                NavigationBar {
-                    topLevel.forEach { dest ->
-                        NavigationBarItem(
-                            selected = currentRoute == dest.route,
-                            onClick = {
-                                navController.navigate(dest.route) {
-                                    popUpTo(navController.graph.startDestinationId) { saveState = true }
-                                    launchSingleTop = true
-                                    restoreState = true
-                                }
-                            },
-                            icon = dest.icon,
-                            label = { Text(dest.label) },
-                        )
+                androidx.compose.foundation.layout.Column {
+                    MiniPlayer(onExpand = { navController.navigate(SertumDestinations.NOW_PLAYING) })
+                    NavigationBar {
+                        topLevel.forEach { dest ->
+                            NavigationBarItem(
+                                selected = currentRoute == dest.route,
+                                onClick = {
+                                    navController.navigate(dest.route) {
+                                        popUpTo(navController.graph.startDestinationId) { saveState = true }
+                                        launchSingleTop = true
+                                        restoreState = true
+                                    }
+                                },
+                                icon = dest.icon,
+                                label = { Text(dest.label) },
+                            )
+                        }
                     }
                 }
             }
@@ -97,6 +103,10 @@ fun SertumApp() {
                     onAlbumClick = { key -> navController.navigate(SertumDestinations.albumDetail(key)) },
                 )
             }
+            composable(SertumDestinations.NOW_PLAYING) {
+                NowPlayingScreen(onOpenQueue = { navController.navigate(SertumDestinations.QUEUE) })
+            }
+            composable(SertumDestinations.QUEUE) { QueueScreen() }
         }
     }
 }
