@@ -38,7 +38,9 @@ class MediaStoreSource(private val context: Context) {
                 val path = if (!data.isNullOrBlank()) {
                     data
                 } else {
-                    listOfNotNull(relative, name).joinToString("/")
+                    val relative = listOfNotNull(relative, name).joinToString("/")
+                    android.os.Environment.getExternalStorageDirectory().absolutePath +
+                        "/" + relative
                 }
                 result += ScanCandidate(
                     uri = ContentUris.withAppendedId(collection, id).toString(),

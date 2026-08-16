@@ -3,12 +3,15 @@ package com.sertum.player.data.scan
 import android.content.Context
 import android.media.MediaMetadataRetriever
 import android.net.Uri
+import com.sertum.player.data.covers.CoverResolver
+import com.sertum.player.data.covers.CoverStore
 import com.sertum.player.data.db.AlbumEntity
 import com.sertum.player.data.db.ArtistEntity
 import com.sertum.player.data.db.LibraryDao
 import com.sertum.player.data.db.SourceType
 import com.sertum.player.data.db.TrackEntity
 import com.sertum.player.domain.model.AlbumKey
+import java.io.File
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
@@ -32,8 +35,15 @@ data class ScanStats(
 class LibraryScanner(
     private val context: Context,
     private val dao: LibraryDao,
+    private val coverStore: CoverStore,
 ) {
     private val scope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
+
+    private data class ParsedTrack(
+        val track: TrackEntity,
+        val embeddedPicture: ByteArray?,
+        val folderPath: String,
+    )
 
     fun scanNow(onDone: (Result<ScanStats>) -> Unit = {}) {
         scope.launch {
@@ -45,37 +55,50 @@ class LibraryScanner(
         val candidates = withContext(Dispatchers.IO) { MediaStoreSource(context).scan() }
         var parsed = 0
         var failed = 0
-        val tracks = mutableListOf<TrackEntity>()
+        val parsedTracks = mutableListOf<ParsedTrack>()
         for (candidate in candidates) {
             val parsedTrack = runCatching { parse(candidate) }.getOrNull()
             if (parsedTrack == null) {
                 failed += 1
             } else {
-                tracks += parsedTrack
+                parsedTracks += parsedTrack
                 parsed += 1
             }
         }
+        val tracks = parsedTracks.map { it.track }
 
         dao.deleteTracksBySource(SourceType.MEDIA_STORE)
         tracks.forEach { dao.upsertTrack(it) }
 
-        val albums = tracks.groupBy { it.albumKey }.map { (key, rows) ->
+        val albums = mutableListOf<AlbumEntity>()
+        for ((key, rows) in parsedTracks.groupBy { it.track.albumKey }) {
             val first = rows.first()
-            AlbumEntity(
+            val folderCover = resolveFolderCover(first.folderPath)
+            val embeddedPath = rows.firstNotNullOfOrNull { it.embeddedPicture }?.let { picture ->
+                runCatching { coverStore.saveEmbedded(key, picture) }.getOrNull()
+            }
+            val userCover = dao.coverForAlbum(key)?.userCoverPath
+            val resolved = CoverResolver.resolve(userCover, embeddedPath, folderCover).reference
+            albums += AlbumEntity(
                 albumKey = key,
-                title = first.albumTitle ?: "Unknown album",
-                albumArtist = first.albumArtist ?: first.artist ?: "Unknown artist",
-                year = first.year,
-                coverRef = null,
+                title = first.track.albumTitle ?: "Unknown album",
+                albumArtist = first.track.albumArtist ?: first.track.artist ?: "Unknown artist",
+                year = first.track.year,
+                coverRef = resolved,
+                embeddedCoverPath = embeddedPath,
+                folderCoverPath = folderCover,
                 trackCount = rows.size,
             )
         }
         val artists = tracks
-            .map { it.albumArtist ?: it.artist ?: "Unknown artist" }
-            .groupingBy { it }
-            .eachCount()
-            .map { (name, count) ->
-                ArtistEntity(name = name, sortKey = name.uppercase(), albumCount = count)
+            .map { (it.albumArtist ?: it.artist ?: "Unknown artist") to it.albumKey }
+            .groupBy { it.first }
+            .map { (name, rows) ->
+                ArtistEntity(
+                    name = name,
+                    sortKey = name.uppercase(),
+                    albumCount = rows.map { it.second }.distinct().size,
+                )
             }
 
         dao.clearAlbumsAndArtists()
@@ -84,7 +107,16 @@ class LibraryScanner(
         return ScanStats(candidates.size, parsed, failed, albums.size, artists.size)
     }
 
-    private fun parse(candidate: ScanCandidate): TrackEntity? {
+    private fun resolveFolderCover(folderPath: String): String? {
+        val dir = File(folderPath)
+        if (!dir.isDirectory) return null
+        return listOf("cover.jpg", "cover.png", "folder.jpg", "Folder.jpg", "Cover.jpg")
+            .map { File(dir, it) }
+            .firstOrNull { it.isFile }
+            ?.absolutePath
+    }
+
+    private fun parse(candidate: ScanCandidate): ParsedTrack? {
         val retriever = MediaMetadataRetriever()
         return try {
             retriever.setDataSource(context, Uri.parse(candidate.uri))
@@ -109,7 +141,8 @@ class LibraryScanner(
             }.getOrNull()
             val mimeType = retriever.extractMetadata(MediaMetadataRetriever.METADATA_KEY_MIMETYPE)
                 ?: "audio/*"
-            TrackEntity(
+            val embeddedPicture = runCatching { retriever.embeddedPicture }.getOrNull()
+            val track = TrackEntity(
                 id = candidate.uri.hashCode().toLong(),
                 uri = candidate.uri,
                 title = title,
@@ -129,6 +162,7 @@ class LibraryScanner(
                 coverRef = null,
                 isPlayable = true,
             )
+            ParsedTrack(track, embeddedPicture, candidate.path.substringBeforeLast('/', ""))
         } catch (_: Exception) {
             null
         } finally {

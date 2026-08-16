@@ -1,5 +1,6 @@
 package com.sertum.player.ui.screens.library
 
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -76,6 +77,7 @@ fun ArtistsScreen(onArtistClick: (String) -> Unit = {}) {
                         Row(
                             Modifier
                                 .fillMaxWidth()
+                                .clickable { onArtistClick(artist.name) }
                                 .padding(horizontal = 16.dp, vertical = 10.dp),
                             verticalAlignment = Alignment.CenterVertically,
                         ) {

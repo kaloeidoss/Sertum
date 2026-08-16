@@ -18,6 +18,17 @@ class CoverStore(private val filesDir: File) {
         return file.absolutePath
     }
 
+    fun saveEmbedded(albumKey: String, bytes: ByteArray): String {
+        val file = autoFileFor(albumKey, "embedded")
+        file.writeBytes(bytes)
+        return file.absolutePath
+    }
+
+    fun autoFileFor(albumKey: String, kind: String): File =
+        File(dir, "$kind-${sha256(albumKey)}.img")
+
+    fun deleteEmbedded(albumKey: String): Boolean = autoFileFor(albumKey, "embedded").delete()
+
     fun userCoverFor(albumKey: String): String? =
         fileFor(albumKey).takeIf { it.exists() && it.length() > 0 }?.absolutePath
 

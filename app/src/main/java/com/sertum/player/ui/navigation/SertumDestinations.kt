@@ -1,6 +1,7 @@
 package com.sertum.player.ui.navigation
 
 object SertumDestinations {
+    const val MAIN = "main"
     const val SONGS = "songs"
     const val ALBUMS = "albums"
     const val ARTISTS = "artists"

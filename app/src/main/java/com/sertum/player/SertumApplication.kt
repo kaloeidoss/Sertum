@@ -90,7 +90,7 @@ class SertumApplication : Application() {
 
     val database: SertumDatabase by lazy {
         Room.databaseBuilder(this, SertumDatabase::class.java, "sertum.db")
-            .addMigrations(SertumDatabase.MIGRATION_1_2)
+            .addMigrations(SertumDatabase.MIGRATION_1_2, SertumDatabase.MIGRATION_2_3)
             .build()
     }
 
@@ -101,7 +101,7 @@ class SertumApplication : Application() {
     }
 
     val libraryScanner: LibraryScanner by lazy {
-        LibraryScanner(this, database.libraryDao())
+        LibraryScanner(this, database.libraryDao(), coverStore)
     }
 
     private val resumeStore: RoomResumePositionStore by lazy {

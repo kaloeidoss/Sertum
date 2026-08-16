@@ -13,7 +13,7 @@ import androidx.sqlite.db.SupportSQLiteDatabase
         CoverEntity::class,
         PlaybackPositionEntity::class,
     ],
-    version = 2,
+    version = 3,
     exportSchema = true,
 )
 abstract class SertumDatabase : RoomDatabase() {
@@ -29,6 +29,13 @@ abstract class SertumDatabase : RoomDatabase() {
                         "`updatedAtEpochMs` INTEGER NOT NULL, " +
                         "PRIMARY KEY(`trackId`))",
                 )
+            }
+        }
+
+        val MIGRATION_2_3 = object : Migration(2, 3) {
+            override fun migrate(db: SupportSQLiteDatabase) {
+                db.execSQL("ALTER TABLE albums ADD COLUMN embeddedCoverPath TEXT")
+                db.execSQL("ALTER TABLE albums ADD COLUMN folderCoverPath TEXT")
             }
         }
     }
