@@ -2,6 +2,7 @@ package com.sertum.player.audio.backend
 
 import android.content.Context
 import androidx.media3.common.C
+import androidx.media3.common.MimeTypes
 import androidx.media3.common.util.UnstableApi
 import com.sertum.player.domain.playback.AudioOutputBackend
 
@@ -32,17 +33,18 @@ class RoutedAudioOutputProvider(context: Context) :
         formatConfig: androidx.media3.exoplayer.audio.AudioOutputProvider.FormatConfig,
     ): androidx.media3.exoplayer.audio.AudioOutputProvider.FormatSupport {
         if (!isExclusiveRoute()) return super.getFormatSupport(formatConfig)
-        // Direct support for the PCM families the AAudio backend consumes.
-        // 24/32-bit linear PCM is first converted to float by Media3's
-        // DefaultAudioSink processing pipeline, and BackendAudioOutput
-        // converts float back to packed 24-bit PCM losslessly for 24-bit
-        // sources. Compressed formats must be decoded by MediaCodec, so they
-        // are reported unsupported here (never pass compressed bytes through).
-        val level = when (formatConfig.format.pcmEncoding) {
-            C.ENCODING_PCM_16BIT,
-            C.ENCODING_PCM_24BIT,
-            C.ENCODING_PCM_FLOAT,
-            -> androidx.media3.exoplayer.audio.AudioOutputProvider.FORMAT_SUPPORTED_DIRECTLY
+        // Direct support only for raw PCM families the AAudio backend
+        // consumes. Compressed formats carry pcmEncoding metadata too
+        // (e.g. FLAC stream info), so sampleMimeType must be audio/raw —
+        // everything else must go through MediaCodec decoding first.
+        val isRawPcm = MimeTypes.AUDIO_RAW == formatConfig.format.sampleMimeType
+        val level = when {
+            !isRawPcm ->
+                androidx.media3.exoplayer.audio.AudioOutputProvider.FORMAT_UNSUPPORTED
+            formatConfig.format.pcmEncoding == C.ENCODING_PCM_16BIT ||
+                formatConfig.format.pcmEncoding == C.ENCODING_PCM_24BIT ||
+                formatConfig.format.pcmEncoding == C.ENCODING_PCM_FLOAT ->
+                androidx.media3.exoplayer.audio.AudioOutputProvider.FORMAT_SUPPORTED_DIRECTLY
             else ->
                 androidx.media3.exoplayer.audio.AudioOutputProvider.FORMAT_UNSUPPORTED
         }

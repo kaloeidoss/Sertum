@@ -1,6 +1,7 @@
 package com.sertum.player.audio.extractor
 
 import androidx.media3.common.C
+import androidx.media3.common.DataReader
 import androidx.media3.common.Format
 import androidx.media3.common.MimeTypes
 import androidx.media3.common.util.UnstableApi
@@ -49,6 +50,7 @@ class AiffExtractor : Extractor {
     private var output: ExtractorOutput? = null
     private var trackOutput: TrackOutput? = null
     private var frameBytes = 0
+    private var bytesPerSample = 2
     private var dataBytesRemaining = 0L
     private var framesFed = 0L
     private var sampleRate = 1
@@ -89,7 +91,8 @@ class AiffExtractor : Extractor {
                 val frameCount = readU32(comm, 2)
                 val bitsPerSample = readU16(comm, 6)
                 sampleRate = readExtended80(comm, 8).toInt().coerceAtLeast(1)
-                frameBytes = channelCount * (bitsPerSample / 8)
+                bytesPerSample = bitsPerSample / 8
+                frameBytes = channelCount * bytesPerSample
                 val pcmEncoding = when (bitsPerSample) {
                     16 -> C.ENCODING_PCM_16BIT
                     24 -> C.ENCODING_PCM_24BIT
@@ -132,7 +135,21 @@ class AiffExtractor : Extractor {
         if (dataBytesRemaining <= 0) return Extractor.RESULT_END_OF_INPUT
 
         val block = 4096.coerceAtMost(dataBytesRemaining.toInt())
-        val read = out.sampleData(input, block, false)
+        val read: Int = if (bytesPerSample > 1) {
+            // AIFF PCM is big-endian; Media3 PCM is little-endian.
+            // Feed through a DataReader that byte-swaps on read so the
+            // int-returning sampleData overload still reports bytes consumed.
+            val swappedReader = object : DataReader {
+                override fun read(buffer: ByteArray, offset: Int, length: Int): Int {
+                    val read = input.read(buffer, offset, length)
+                    if (read > 0) swapPcmBytes(buffer, offset, read, bytesPerSample)
+                    return read
+                }
+            }
+            out.sampleData(swappedReader, block, false)
+        } else {
+            out.sampleData(input, block, false)
+        }
         if (read <= 0) return Extractor.RESULT_END_OF_INPUT
         dataBytesRemaining -= read
 
@@ -146,6 +163,34 @@ class AiffExtractor : Extractor {
             null,
         )
         return if (dataBytesRemaining <= 0) Extractor.RESULT_END_OF_INPUT else Extractor.RESULT_CONTINUE
+    }
+
+    private fun swapPcmBytes(buffer: ByteArray, offset: Int, length: Int, bytesPerSample: Int) {
+        var i = offset
+        val end = offset + length
+        while (i + bytesPerSample <= end) {
+            when (bytesPerSample) {
+                2 -> {
+                    val t = buffer[i]
+                    buffer[i] = buffer[i + 1]
+                    buffer[i + 1] = t
+                }
+                3 -> {
+                    val t = buffer[i]
+                    buffer[i] = buffer[i + 2]
+                    buffer[i + 2] = t
+                }
+                4 -> {
+                    val t0 = buffer[i]
+                    buffer[i] = buffer[i + 3]
+                    buffer[i + 3] = t0
+                    val t1 = buffer[i + 1]
+                    buffer[i + 1] = buffer[i + 2]
+                    buffer[i + 2] = t1
+                }
+            }
+            i += bytesPerSample
+        }
     }
 
     override fun seek(position: Long, timeUs: Long) {

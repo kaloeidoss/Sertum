@@ -43,7 +43,9 @@ class PlayerEngine(context: Context) {
     }
 
     fun release() {
+        // ExoPlayer.release() releases the routed AudioOutputProvider through
+        // DefaultAudioSink on the correct playback thread; do not release it
+        // again from the calling thread.
         player.release()
-        router.release()
     }
 }

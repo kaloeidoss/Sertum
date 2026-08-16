@@ -50,7 +50,19 @@ class AiffExtractorTest {
         assertThat(output.format!!.pcmEncoding).isEqualTo(C.ENCODING_PCM_16BIT)
         assertThat(output.seekMap).isNotNull()
         assertThat(output.seekMap!!.isSeekable).isFalse()
-        assertThat(output.data.toByteArray()).isEqualTo(data)
+        assertThat(output.data.toByteArray()).isEqualTo(toLittleEndian16(data))
+    }
+
+    private fun toLittleEndian16(be: ByteArray): ByteArray {
+        val le = be.copyOf()
+        var i = 0
+        while (i + 1 < le.size) {
+            val t = le[i]
+            le[i] = le[i + 1]
+            le[i + 1] = t
+            i += 2
+        }
+        return le
     }
 
     private fun buildAiff(sampleRate: Int, channels: Int, bits: Int, frames: Int, pcm: ByteArray): ByteArray {

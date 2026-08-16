@@ -48,7 +48,6 @@ class DecoderContractTest {
     fun tearDown() {
         runOnMainSync {
             players.forEach { runCatching { it.release() } }
-            providers.forEach { runCatching { it.release() } }
         }
         players.clear()
         providers.clear()
@@ -179,8 +178,7 @@ class DecoderContractTest {
         assertThat(backend.totalBytes.get()).isGreaterThan(0)
 
         runOnMainSync {
-            activePlayer.release()
-            activeProvider.release()
+            activePlayer.release() // releases the routed provider on the playback thread
         }
         players.remove(activePlayer)
         providers.remove(activeProvider)
@@ -269,15 +267,21 @@ class DecoderContractTest {
                 out.write((v shr 8) and 0xFF); out.write(v and 0xFF)
             }
             val commSize = 18 // channels + sample frames + sample size + 80-bit rate
-            // FORM size = AIFF(4) + COMM(8 + commSize) + SSND(8 + dataSize)
-            ascii("FORM"); be32(4 + (8 + commSize) + (8 + dataSize)); ascii("AIFF")
+            val ssndSize = 8 + dataSize
+            // FORM size = AIFF(4) + COMM(8 + commSize) + SSND(8 + ssndSize)
+            ascii("FORM"); be32(4 + (8 + commSize) + (8 + ssndSize)); ascii("AIFF")
             ascii("COMM"); be32(commSize); be16(2); be32(frames); be16(bitDepth)
             // 80-bit IEEE 754 extended float for the sample rate.
-            val exponent = 16383 + 15
-            val mantissa = sampleRate.toLong() shl 47
+            var exponent = 16383
+            var mantissa = sampleRate.toDouble()
+            while (mantissa >= 2.0) { mantissa /= 2.0; exponent++ }
+            while (mantissa < 1.0) { mantissa *= 2.0; exponent-- }
+            val fraction = mantissa - 1.0
+            val fractionBits = (fraction * 9_223_372_036_854_775_808.0).toLong()
+            val m = (1L shl 63) or (fractionBits and 0x7FFFFFFFFFFFFFFFL)
             be16(exponent)
-            for (shift in intArrayOf(56, 48, 40, 32, 24, 16, 8, 0)) {
-                out.write(((mantissa shr shift) and 0xFF).toInt())
+            for (shift in 7 downTo 0) {
+                out.write(((m shr (shift * 8)) and 0xFF).toInt())
             }
             ascii("SSND"); be32(8 + dataSize); be32(0); be32(0)
             for (i in 0 until frames) {

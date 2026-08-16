@@ -328,8 +328,7 @@ class PlaybackCoordinator(
     fun release() {
         saveResumePosition()
         scope.cancel()
-        player.release()
-        engine.router.release()
+        player.release() // releases the routed audio output on the playback thread
     }
 
     // ---- internals ----
