@@ -28,12 +28,12 @@ fun MainTabs(
     val pagerState = rememberPagerState(initialPage = selectedTab) { 4 }
 
     LaunchedEffect(selectedTab) {
-        if (pagerState.currentPage != selectedTab) {
+        if (pagerState.settledPage != selectedTab) {
             pagerState.animateScrollToPage(selectedTab)
         }
     }
     LaunchedEffect(pagerState) {
-        snapshotFlow { pagerState.currentPage }.drop(1).collect { onTabChange(it) }
+        snapshotFlow { pagerState.settledPage }.drop(1).collect { onTabChange(it) }
     }
 
     HorizontalPager(state = pagerState, modifier = Modifier.fillMaxSize()) { page ->
