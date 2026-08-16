@@ -290,6 +290,10 @@ class PlaybackCoordinator(
 
     fun onUsbDeviceAttached() {
         if (_outputMode.value != OutputMode.USB_EXCLUSIVE) return
+        if (playlist.isEmpty()) {
+            _usbRecovery.value = UsbRecoveryState.NONE
+            return
+        }
         if (_usbRecovery.value == UsbRecoveryState.RECOVERING) return
         scope.launch {
             var recovered = false

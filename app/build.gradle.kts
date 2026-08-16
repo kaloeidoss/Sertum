@@ -146,9 +146,7 @@ tasks.register<org.gradle.testing.jacoco.tasks.JacocoReport>("jacocoTestReport")
     sourceDirectories.setFrom(files("src/main/java"))
     classDirectories.setFrom(coreCoverageClassDirs())
     executionData.setFrom(
-        fileTree("$buildDir") {
-            include("**/*.exec", "**/*.ec")
-        },
+        files("$buildDir/outputs/unit_test_code_coverage/debugUnitTest/testDebugUnitTest.exec"),
     )
 }
 
@@ -161,9 +159,7 @@ tasks.register<org.gradle.testing.jacoco.tasks.JacocoCoverageVerification>("jaco
     sourceDirectories.setFrom(files("src/main/java"))
     classDirectories.setFrom(coreCoverageClassDirs())
     executionData.setFrom(
-        fileTree("$buildDir") {
-            include("**/*.exec", "**/*.ec")
-        },
+        files("$buildDir/outputs/unit_test_code_coverage/debugUnitTest/testDebugUnitTest.exec"),
     )
     violationRules {
         rule {
