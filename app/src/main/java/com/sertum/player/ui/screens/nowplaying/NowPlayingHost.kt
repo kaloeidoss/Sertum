@@ -1,5 +1,6 @@
 package com.sertum.player.ui.screens.nowplaying
 
+import androidx.activity.compose.BackHandler
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.slideInVertically
 import androidx.compose.animation.slideOutVertically
@@ -23,6 +24,10 @@ fun NowPlayingHost(
 ) {
     Box(Modifier.fillMaxSize()) {
         NowPlayingScreen(onOpenQueue = { onShowQueueChange(true) })
+
+        // Side-swipe/back while the queue layer is open closes only the
+        // queue layer and leaves the player sheet in place.
+        BackHandler(enabled = showQueue) { onShowQueueChange(false) }
 
         AnimatedVisibility(
             visible = showQueue,

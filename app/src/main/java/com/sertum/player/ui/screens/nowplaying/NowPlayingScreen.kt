@@ -1,6 +1,12 @@
 package com.sertum.player.ui.screens.nowplaying
 
+import androidx.compose.animation.core.LinearEasing
+import androidx.compose.animation.core.animateFloat
+import androidx.compose.animation.core.infiniteRepeatable
+import androidx.compose.animation.core.rememberInfiniteTransition
+import androidx.compose.animation.core.tween
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -11,8 +17,10 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Album
 import androidx.compose.material.icons.filled.QueueMusic
 import androidx.compose.material.icons.filled.SkipNext
 import androidx.compose.material.icons.filled.SkipPrevious
@@ -33,6 +41,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
@@ -44,7 +53,9 @@ import com.sertum.player.data.covers.CoverResolver
 import com.sertum.player.ui.components.UsbBadge
 import com.sertum.player.ui.playback.OutputMode
 import com.sertum.player.ui.playback.PlaybackStateHolder
+import com.sertum.player.ui.settings.SettingsStateHolder
 import com.sertum.player.ui.theme.SurfaceBlack
+import com.sertum.player.ui.theme.WarmGoldDim
 
 /**
  * Full player. The cover stays in the upper area; title, progress and
@@ -53,14 +64,21 @@ import com.sertum.player.ui.theme.SurfaceBlack
 @Composable
 fun NowPlayingScreen(onOpenQueue: () -> Unit) {
     val state by PlaybackStateHolder.state.collectAsState()
+    val settings by SettingsStateHolder.state.collectAsState()
     val controller = (LocalContext.current.applicationContext as SertumApplication).playbackController
+    val infiniteTransition = rememberInfiniteTransition()
+    val rotation by infiniteTransition.animateFloat(
+        initialValue = 0f,
+        targetValue = 360f,
+        animationSpec = infiniteRepeatable(tween(durationMillis = 12_000, easing = LinearEasing)),
+    )
     Column(Modifier.fillMaxSize().padding(24.dp)) {
         val coverRef = state.coverRef?.takeUnless { it == CoverResolver.PLACEHOLDER_REF }
         Box(
             Modifier
                 .fillMaxWidth()
                 .aspectRatio(1f)
-                .clip(RoundedCornerShape(16.dp))
+                .clip(if (settings.roundCover) CircleShape else RoundedCornerShape(16.dp))
                 .background(SurfaceBlack, MaterialTheme.shapes.large),
             contentAlignment = Alignment.Center,
         ) {
@@ -69,13 +87,45 @@ fun NowPlayingScreen(onOpenQueue: () -> Unit) {
                     model = coverRef,
                     contentDescription = null,
                     contentScale = ContentScale.Crop,
-                    modifier = Modifier.fillMaxSize(),
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .then(
+                            if (settings.roundCover) {
+                                Modifier.graphicsLayer { rotationZ = rotation }
+                            } else {
+                                Modifier
+                            },
+                        ),
                 )
             } else {
                 Text(
                     text = state.trackTitle.ifBlank { stringResource(R.string.no_track_playing) }.take(1).uppercase(),
                     style = MaterialTheme.typography.displayLarge,
                     color = MaterialTheme.colorScheme.primary,
+                    modifier = if (settings.roundCover) {
+                        Modifier.graphicsLayer { rotationZ = rotation }
+                    } else {
+                        Modifier
+                    },
+                )
+            }
+            if (settings.roundCover) {
+                Box(
+                    Modifier
+                        .fillMaxSize()
+                        .border(4.dp, WarmGoldDim, CircleShape),
+                )
+            }
+            IconButton(
+                onClick = { SettingsStateHolder.update { it.copy(roundCover = !it.roundCover) } },
+                modifier = Modifier
+                    .align(Alignment.BottomEnd)
+                    .padding(8.dp),
+            ) {
+                Icon(
+                    Icons.Filled.Album,
+                    contentDescription = stringResource(R.string.cd_toggle_cover_shape),
+                    tint = MaterialTheme.colorScheme.onPrimary,
                 )
             }
         }

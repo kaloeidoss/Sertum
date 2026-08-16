@@ -130,9 +130,10 @@ fun AlbumCard(album: AlbumEntity, onClick: () -> Unit = {}) {
                 .background(SurfaceBlack, MaterialTheme.shapes.medium),
             contentAlignment = Alignment.Center,
         ) {
-            if (album.coverRef != null) {
+            val coverRef = album.coverRef?.takeUnless { it == com.sertum.player.data.covers.CoverResolver.PLACEHOLDER_REF }
+            if (coverRef != null) {
                 AsyncImage(
-                    model = album.coverRef,
+                    model = coverRef,
                     contentDescription = null,
                     modifier = Modifier.fillMaxSize().clip(RoundedCornerShape(12.dp)),
                     contentScale = androidx.compose.ui.layout.ContentScale.Crop,

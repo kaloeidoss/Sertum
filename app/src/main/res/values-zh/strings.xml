@@ -36,6 +36,7 @@
     <string name="cd_previous">上一首</string>
     <string name="cd_next">下一首</string>
     <string name="cd_queue">队列</string>
+    <string name="cd_toggle_cover_shape">切换封面形状</string>
     <string name="cd_back_to_player">返回播放页</string>
     <string name="cd_move_up">上移</string>
     <string name="cd_move_down">下移</string>

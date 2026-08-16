@@ -1,5 +1,7 @@
 package com.sertum.player.ui.navigation
 
+import android.net.Uri
+
 object SertumDestinations {
     const val MAIN = "main"
     const val SONGS = "songs"
@@ -11,6 +13,8 @@ object SertumDestinations {
     const val NOW_PLAYING = "nowplaying"
     const val QUEUE = "queue"
 
-    fun albumDetail(albumKey: String) = "album/$albumKey"
-    fun artistDetail(artistName: String) = "artist/$artistName"
+    // Folder-based album keys contain slashes and pipes; encode them so the
+    // navigation route parser never treats them as path segments.
+    fun albumDetail(albumKey: String) = "album/${Uri.encode(albumKey)}"
+    fun artistDetail(artistName: String) = "artist/${Uri.encode(artistName)}"
 }

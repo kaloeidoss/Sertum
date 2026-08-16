@@ -12,6 +12,7 @@ data class SettingsState(
     val language: LanguageOption = LanguageOption.SYSTEM,
     val outputMode: OutputMode = OutputMode.STANDARD,
     val fullScanEnabled: Boolean = false,
+    val roundCover: Boolean = false,
 )
 
 object SettingsStateHolder {

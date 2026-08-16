@@ -155,14 +155,16 @@ fun SertumApp() {
                     SertumDestinations.ALBUM_DETAIL,
                     arguments = listOf(navArgument("albumKey") { type = NavType.StringType }),
                 ) { entry ->
-                    AlbumDetailScreen(albumKey = entry.arguments?.getString("albumKey").orEmpty())
+                    AlbumDetailScreen(
+                        albumKey = entry.arguments?.getString("albumKey")?.let(android.net.Uri::decode).orEmpty(),
+                    )
                 }
                 composable(
                     SertumDestinations.ARTIST_DETAIL,
                     arguments = listOf(navArgument("artistName") { type = NavType.StringType }),
                 ) { entry ->
                     ArtistDetailScreen(
-                        artistName = entry.arguments?.getString("artistName").orEmpty(),
+                        artistName = entry.arguments?.getString("artistName")?.let(android.net.Uri::decode).orEmpty(),
                         onAlbumClick = { key -> navController.navigate(SertumDestinations.albumDetail(key)) },
                     )
                 }
