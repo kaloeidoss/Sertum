@@ -36,6 +36,10 @@
         <activity
             android:name=".audio.backend.BackendSmokeActivity"
             android:exported="true" />
+
+        <activity
+            android:name=".audio.GaplessSmokeActivity"
+            android:exported="true" />
     </application>
 
 </manifest>
