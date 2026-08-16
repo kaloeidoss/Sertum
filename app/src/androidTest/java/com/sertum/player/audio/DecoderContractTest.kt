@@ -34,6 +34,8 @@ import kotlin.math.sin
 class DecoderContractTest {
 
     private val context = InstrumentationRegistry.getInstrumentation().targetContext
+    private val testContext = InstrumentationRegistry.getInstrumentation().context
+    private val instrumentation = InstrumentationRegistry.getInstrumentation()
     private val players = mutableListOf<ExoPlayer>()
     private val providers = mutableListOf<RoutedAudioOutputProvider>()
 
@@ -44,8 +46,10 @@ class DecoderContractTest {
 
     @After
     fun tearDown() {
-        players.forEach { runCatching { it.release() } }
-        providers.forEach { runCatching { it.release() } }
+        runOnMainSync {
+            players.forEach { runCatching { it.release() } }
+            providers.forEach { runCatching { it.release() } }
+        }
         players.clear()
         providers.clear()
     }
@@ -106,43 +110,57 @@ class DecoderContractTest {
     private fun asset(name: String): File {
         val target = File(context.cacheDir, name)
         if (!target.exists()) {
-            context.assets.open("contract-media/$name").use { input ->
+            testContext.assets.open("contract-media/$name").use { input ->
                 target.outputStream().use { output -> input.copyTo(output) }
             }
         }
         return target
     }
 
+    private fun runOnMainSync(block: () -> Unit) {
+        instrumentation.runOnMainSync(block)
+    }
+
     private fun decodeAndAssert(label: String, file: File, expectedRate: Int?, expectedDepth: Int?) {
         val backend = CapturingBackend()
-        val provider = RoutedAudioOutputProvider(context).apply {
-            exclusiveEnabled = true
-            exclusiveBackend = backend
+        var provider: RoutedAudioOutputProvider? = null
+        var player: ExoPlayer? = null
+        runOnMainSync {
+            provider = RoutedAudioOutputProvider(context).apply {
+                exclusiveEnabled = true
+                exclusiveBackend = backend
+            }
+            providers += provider!!
+            player = ExoPlayer.Builder(context)
+                .setMediaSourceFactory(DefaultMediaSourceFactory(context, SertumExtractorsFactory()))
+                .setAudioOutputProvider(provider!!)
+                .build()
+            players += player!!
         }
-        providers += provider
-        val player = ExoPlayer.Builder(context)
-            .setMediaSourceFactory(DefaultMediaSourceFactory(context, SertumExtractorsFactory()))
-            .setAudioOutputProvider(provider)
-            .build()
-        players += player
+        val activePlayer = player!!
+        val activeProvider = provider!!
 
         val ended = CountDownLatch(1)
-        player.addListener(object : Player.Listener {
-            override fun onPlaybackStateChanged(playbackState: Int) {
-                if (playbackState == Player.STATE_ENDED) ended.countDown()
-            }
+        val playerError = java.util.concurrent.atomic.AtomicReference<androidx.media3.common.PlaybackException?>(null)
+        runOnMainSync {
+            activePlayer.addListener(object : Player.Listener {
+                override fun onPlaybackStateChanged(playbackState: Int) {
+                    if (playbackState == Player.STATE_ENDED) ended.countDown()
+                }
 
-            override fun onPlayerError(error: androidx.media3.common.PlaybackException) {
-                ended.countDown()
-            }
-        })
+                override fun onPlayerError(error: androidx.media3.common.PlaybackException) {
+                    playerError.set(error)
+                    ended.countDown()
+                }
+            })
 
-        player.setMediaItem(MediaItem.fromUri(Uri.fromFile(file)))
-        player.prepare()
-        player.play()
+            activePlayer.setMediaItem(MediaItem.fromUri(Uri.fromFile(file)))
+            activePlayer.prepare()
+            activePlayer.play()
+        }
 
         assertThat(ended.await(15, TimeUnit.SECONDS)).isTrue()
-        assertThat(player.playerError).isNull()
+        assertThat(playerError.get()).isNull()
 
         val spec = backend.specs.lastOrNull()
         assertThat(spec).isNotNull()
@@ -158,6 +176,13 @@ class DecoderContractTest {
             assertThat(spec.bitDepth).isIn(listOf(16, 24, 32))
         }
         assertThat(backend.totalBytes.get()).isGreaterThan(0)
+
+        runOnMainSync {
+            activePlayer.release()
+            activeProvider.release()
+        }
+        players.remove(activePlayer)
+        providers.remove(activeProvider)
     }
 
     private class CapturingBackend : AudioOutputBackend {
