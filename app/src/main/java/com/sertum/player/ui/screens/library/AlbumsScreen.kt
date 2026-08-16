@@ -12,6 +12,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.grid.GridCells
 import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
 import androidx.compose.foundation.lazy.grid.items
+import androidx.compose.foundation.lazy.grid.rememberLazyGridState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
@@ -21,6 +22,7 @@ import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -32,14 +34,20 @@ import androidx.compose.ui.unit.dp
 import com.sertum.player.R
 import com.sertum.player.SertumApplication
 import com.sertum.player.data.db.AlbumEntity
+import com.sertum.player.ui.components.ALPHABET_RAIL_LETTERS
+import com.sertum.player.ui.components.AlphabetRail
 import com.sertum.player.ui.theme.SurfaceBlack
 import coil3.compose.AsyncImage
+import kotlinx.coroutines.launch
 
 @Composable
 fun AlbumsScreen(onAlbumClick: (String) -> Unit = {}) {
     val dao = (LocalContext.current.applicationContext as SertumApplication).database.libraryDao()
     val albums by dao.observeAlbums().collectAsState(initial = null as List<AlbumEntity>?)
     var query by remember { mutableStateOf("") }
+    var selectedLetter by remember { mutableStateOf<Char?>(null) }
+    val gridState = rememberLazyGridState()
+    val scope = rememberCoroutineScope()
     val visible = if (query.isBlank()) {
         albums.orEmpty()
     } else {
@@ -77,15 +85,31 @@ fun AlbumsScreen(onAlbumClick: (String) -> Unit = {}) {
         } else if (visible.isEmpty()) {
             EmptyLibrary(stringResource(R.string.nav_albums))
         } else {
-            LazyVerticalGrid(
-                columns = GridCells.Fixed(4),
-                modifier = Modifier.fillMaxSize().padding(8.dp),
-                horizontalArrangement = Arrangement.spacedBy(8.dp),
-                verticalArrangement = Arrangement.spacedBy(12.dp),
-            ) {
-                items(visible, key = { it.albumKey }) { album ->
-                    AlbumCard(album, onClick = { onAlbumClick(album.albumKey) })
+            val letterIndexes = ALPHABET_RAIL_LETTERS.associateWith { letter ->
+                visible.indexOfFirst { firstLetterOf(it.title) == letter }
+            }.filterValues { it >= 0 }
+            Box(Modifier.fillMaxSize()) {
+                LazyVerticalGrid(
+                    columns = GridCells.Fixed(4),
+                    state = gridState,
+                    modifier = Modifier.fillMaxSize().padding(start = 8.dp, end = 30.dp, top = 8.dp, bottom = 8.dp),
+                    horizontalArrangement = Arrangement.spacedBy(8.dp),
+                    verticalArrangement = Arrangement.spacedBy(12.dp),
+                ) {
+                    items(visible, key = { it.albumKey }) { album ->
+                        AlbumCard(album, onClick = { onAlbumClick(album.albumKey) })
+                    }
                 }
+                AlphabetRail(
+                    selected = selectedLetter,
+                    onSelect = { letter ->
+                        selectedLetter = letter
+                        val index = letterIndexes[letter]
+                        if (index != null) {
+                            scope.launch { gridState.animateScrollToItem(index) }
+                        }
+                    },
+                )
             }
         }
     }

@@ -9,6 +9,7 @@ import android.provider.Settings
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
@@ -19,14 +20,19 @@ import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.RadioButton
 import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
+import androidx.documentfile.provider.DocumentFile
 import com.sertum.player.R
 import com.sertum.player.SertumApplication
 import com.sertum.player.ui.playback.OutputMode
@@ -39,12 +45,17 @@ fun SettingsScreen() {
     val state by SettingsStateHolder.state.collectAsState()
     val context = LocalContext.current
     val app = context.applicationContext as SertumApplication
+    val scanProgress by app.libraryScanner.progress.collectAsState()
+    var safDirs by remember { mutableStateOf(app.safDirectoryStore.load()) }
     val treeLauncher = rememberLauncherForActivityResult(ActivityResultContracts.OpenDocumentTree()) { uri ->
         if (uri != null) {
             context.contentResolver.takePersistableUriPermission(
                 uri,
                 Intent.FLAG_GRANT_READ_URI_PERMISSION,
             )
+            app.safDirectoryStore.add(uri)
+            safDirs = app.safDirectoryStore.load()
+            app.requestLibraryScan()
         }
     }
     val exportLauncher = rememberLauncherForActivityResult(
@@ -86,6 +97,53 @@ fun SettingsScreen() {
         )
         OutlinedButton(onClick = { treeLauncher.launch(null) }, modifier = Modifier.padding(top = 8.dp)) {
             Text(stringResource(R.string.settings_add_folder))
+        }
+        safDirs.forEach { uri ->
+            val name = runCatching { DocumentFile.fromTreeUri(context, uri)?.name }.getOrNull()
+                ?: uri.lastPathSegment ?: uri.toString()
+            Row(
+                Modifier.fillMaxWidth().padding(top = 4.dp),
+                verticalAlignment = Alignment.CenterVertically,
+            ) {
+                Text(
+                    text = name,
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    modifier = Modifier.weight(1f),
+                )
+                TextButton(
+                    onClick = {
+                        runCatching {
+                            context.contentResolver.releasePersistableUriPermission(
+                                uri,
+                                Intent.FLAG_GRANT_READ_URI_PERMISSION,
+                            )
+                        }
+                        app.safDirectoryStore.remove(uri)
+                        safDirs = app.safDirectoryStore.load()
+                        app.requestLibraryScan()
+                    },
+                ) {
+                    Text(stringResource(R.string.settings_remove_folder))
+                }
+            }
+        }
+        if (scanProgress.phase == "collecting" || scanProgress.phase == "parsing") {
+            Text(
+                text = if (scanProgress.phase == "collecting") {
+                    stringResource(R.string.settings_scan_collecting)
+                } else {
+                    stringResource(
+                        R.string.settings_scan_progress,
+                        scanProgress.candidates,
+                        scanProgress.parsed,
+                        scanProgress.failed,
+                    )
+                },
+                style = MaterialTheme.typography.bodyMedium,
+                color = MaterialTheme.colorScheme.primary,
+                modifier = Modifier.padding(top = 8.dp),
+            )
         }
         OutlinedButton(
             onClick = { app.requestLibraryScan() },

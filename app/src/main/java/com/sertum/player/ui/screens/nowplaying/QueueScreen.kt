@@ -1,5 +1,7 @@
 package com.sertum.player.ui.screens.nowplaying
 
+import androidx.compose.foundation.gestures.awaitEachGesture
+import androidx.compose.foundation.gestures.awaitFirstDown
 import androidx.compose.foundation.gestures.detectVerticalDragGestures
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -8,6 +10,7 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.itemsIndexed
+import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ArrowDownward
 import androidx.compose.material.icons.filled.ArrowUpward
@@ -23,6 +26,7 @@ import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.input.pointer.PointerEventPass
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
@@ -40,8 +44,13 @@ import com.sertum.player.ui.playback.PlaybackStateHolder
 fun QueueScreen(onBack: (() -> Unit)? = null) {
     val state by PlaybackStateHolder.state.collectAsState()
     val controller = (LocalContext.current.applicationContext as SertumApplication).playbackController
+    val listState = rememberLazyListState()
 
-    Column(Modifier.fillMaxSize()) {
+    Column(
+        Modifier
+            .fillMaxSize()
+            .then(if (onBack != null) Modifier.closeOnTopDownDrag(listState, onBack) else Modifier),
+    ) {
         Row(
             Modifier
                 .fillMaxWidth()
@@ -81,7 +90,7 @@ fun QueueScreen(onBack: (() -> Unit)? = null) {
             return@Column
         }
 
-        LazyColumn(Modifier.fillMaxSize()) {
+        LazyColumn(state = listState, modifier = Modifier.fillMaxSize()) {
             itemsIndexed(state.queue) { index, title ->
                 Row(
                     Modifier.fillMaxWidth().padding(horizontal = 8.dp, vertical = 2.dp),
@@ -126,4 +135,33 @@ private fun Modifier.dragDownToDismiss(onClose: () -> Unit): Modifier = pointerI
         onVerticalDrag = { _, dragAmount -> totalDrag += dragAmount },
         onDragEnd = { if (totalDrag > 200f) onClose() },
     )
+}
+
+/**
+ * Closes the queue layer when the list is at the top and the user keeps
+ * dragging down. Events are observed in the Initial pass so the outer player
+ * sheet cannot steal the gesture and dismiss itself instead.
+ */
+private fun Modifier.closeOnTopDownDrag(
+    listState: androidx.compose.foundation.lazy.LazyListState,
+    onClose: () -> Unit,
+): Modifier = pointerInput(listState, onClose) {
+    awaitEachGesture {
+        val down = awaitFirstDown(requireUnconsumed = false, pass = PointerEventPass.Initial)
+        var totalDrag = 0f
+        var lastY = down.position.y
+        var closing = false
+        while (true) {
+            val event = awaitPointerEvent(PointerEventPass.Initial)
+            val change = event.changes.firstOrNull { it.id == down.id } ?: break
+            if (!change.pressed) break
+            totalDrag += change.position.y - lastY
+            lastY = change.position.y
+            val atTop = listState.firstVisibleItemIndex == 0 &&
+                listState.firstVisibleItemScrollOffset <= 0
+            if (!closing && atTop && totalDrag > 40f) closing = true
+            if (closing) change.consume()
+        }
+        if (closing && totalDrag > 150f) onClose()
+    }
 }

@@ -3,6 +3,7 @@ package com.sertum.player.ui.screens.library
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -10,6 +11,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Text
@@ -18,6 +20,7 @@ import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -28,7 +31,10 @@ import com.sertum.player.R
 import com.sertum.player.SertumApplication
 import com.sertum.player.audio.PlayableTrack
 import com.sertum.player.data.db.TrackEntity
+import com.sertum.player.ui.components.ALPHABET_RAIL_LETTERS
+import com.sertum.player.ui.components.AlphabetRail
 import com.sertum.player.ui.theme.WarmGold
+import kotlinx.coroutines.launch
 
 @Composable
 fun SongsScreen() {
@@ -37,6 +43,9 @@ fun SongsScreen() {
     val albums by dao.observeAlbums().collectAsState(initial = emptyList())
     val coverByAlbum = albums.associate { it.albumKey to it.coverRef }
     var query by remember { mutableStateOf("") }
+    var selectedLetter by remember { mutableStateOf<Char?>(null) }
+    val listState = rememberLazyListState()
+    val scope = rememberCoroutineScope()
     val visible = if (query.isBlank()) tracks else tracks.filter {
         it.title.contains(query, ignoreCase = true) ||
             (it.artist?.contains(query, ignoreCase = true) == true) ||
@@ -73,19 +82,38 @@ fun SongsScreen() {
             )
         } else {
             val controller = (LocalContext.current.applicationContext as SertumApplication).playbackController
-            LazyColumn(Modifier.fillMaxSize()) {
-                items(visible, key = { it.id }) { track ->
-                    val index = visible.indexOf(track)
-                    TrackRow(
-                        track = track,
-                        onClick = {
-                            controller.playTracks(
-                                visible.map { it.toPlayable().copy(coverRef = coverByAlbum[it.albumKey]) },
-                                startIndex = index,
-                            )
-                        },
-                    )
+            val letterIndexes = ALPHABET_RAIL_LETTERS.associateWith { letter ->
+                visible.indexOfFirst { firstLetterOf(it.title) == letter }
+            }.filterValues { it >= 0 }
+            Box(Modifier.fillMaxSize()) {
+                LazyColumn(
+                    state = listState,
+                    contentPadding = PaddingValues(end = 24.dp),
+                    modifier = Modifier.fillMaxSize(),
+                ) {
+                    items(visible, key = { it.id }) { track ->
+                        val index = visible.indexOf(track)
+                        TrackRow(
+                            track = track,
+                            onClick = {
+                                controller.playTracks(
+                                    visible.map { it.toPlayable().copy(coverRef = coverByAlbum[it.albumKey]) },
+                                    startIndex = index,
+                                )
+                            },
+                        )
+                    }
                 }
+                AlphabetRail(
+                    selected = selectedLetter,
+                    onSelect = { letter ->
+                        selectedLetter = letter
+                        val index = letterIndexes[letter]
+                        if (index != null) {
+                            scope.launch { listState.animateScrollToItem(index) }
+                        }
+                    },
+                )
             }
         }
     }
@@ -99,6 +127,11 @@ fun TrackEntity.toPlayable(): PlayableTrack = PlayableTrack(
     album = albumTitle,
     albumKey = albumKey,
 )
+
+fun firstLetterOf(title: String): Char {
+    val first = title.trim().firstOrNull() ?: return '#'
+    return if (first.isLetter() && first.uppercaseChar() in 'A'..'Z') first.uppercaseChar() else '#'
+}
 
 @Composable
 fun TrackRow(track: TrackEntity, onClick: () -> Unit = {}) {

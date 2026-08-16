@@ -19,7 +19,7 @@ interface LibraryDao {
     )
     fun tracksForAlbum(albumKey: String): Flow<List<TrackEntity>>
 
-    @Query("SELECT * FROM albums ORDER BY albumArtist COLLATE NOCASE, title COLLATE NOCASE")
+    @Query("SELECT * FROM albums ORDER BY title COLLATE NOCASE, albumArtist COLLATE NOCASE")
     fun observeAlbums(): Flow<List<AlbumEntity>>
 
     @Query(

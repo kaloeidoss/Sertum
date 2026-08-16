@@ -1,8 +1,11 @@
 package com.sertum.player.ui
 
+import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.core.tween
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
+import androidx.compose.animation.slideInVertically
+import androidx.compose.animation.slideOutVertically
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxHeight
@@ -93,8 +96,13 @@ fun SertumApp() {
             snackbarHost = { SnackbarHost(snackbarHostState) },
             bottomBar = {
                 // The mini player stays on every browsing surface; the full
-                // player is a full-screen bottom sheet of its own.
-                if (!showNowPlaying) {
+                // player is a full-screen bottom sheet of its own. When the
+                // sheet slides away the bottom chrome slides back up quickly.
+                AnimatedVisibility(
+                    visible = !showNowPlaying,
+                    enter = slideInVertically { it } + fadeIn(tween(120)),
+                    exit = slideOutVertically { it } + fadeOut(tween(100)),
+                ) {
                     Column {
                         MiniPlayer(onExpand = { showNowPlaying = true })
                         NavigationBar(containerColor = MaterialTheme.colorScheme.surface) {

@@ -15,6 +15,9 @@ import java.io.File
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 
@@ -24,6 +27,13 @@ data class ScanStats(
     val failed: Int,
     val albums: Int,
     val artists: Int,
+)
+
+data class ScanProgress(
+    val phase: String = "idle",
+    val candidates: Int = 0,
+    val parsed: Int = 0,
+    val failed: Int = 0,
 )
 
 /**
@@ -36,8 +46,12 @@ class LibraryScanner(
     private val context: Context,
     private val dao: LibraryDao,
     private val coverStore: CoverStore,
+    private val safDirectories: SafDirectoryStore,
 ) {
     private val scope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
+
+    private val _progress = MutableStateFlow(ScanProgress())
+    val progress: StateFlow<ScanProgress> = _progress.asStateFlow()
 
     private data class ParsedTrack(
         val track: TrackEntity,
@@ -50,13 +64,19 @@ class LibraryScanner(
     )
 
     fun scanNow(onDone: (Result<ScanStats>) -> Unit = {}) {
+        _progress.value = ScanProgress(phase = "collecting")
         scope.launch {
             onDone(runCatching { scanBlocking() })
         }
     }
 
     suspend fun scanBlocking(): ScanStats {
-        val candidates = withContext(Dispatchers.IO) { MediaStoreSource(context).scan() }
+        val mediaCandidates = withContext(Dispatchers.IO) { MediaStoreSource(context).scan() }
+        val safCandidates = safDirectories.load().flatMap { treeUri ->
+            runCatching { SafSource().scan(context, treeUri) }.getOrDefault(emptyList())
+        }
+        val candidates = (mediaCandidates + safCandidates).distinctBy { it.uri }
+        _progress.value = ScanProgress(phase = "parsing", candidates = candidates.size)
         var parsed = 0
         var failed = 0
         val parsedTracks = mutableListOf<ParsedTrack>()
@@ -80,10 +100,12 @@ class LibraryScanner(
                     }
                 }
             }
+            _progress.value = ScanProgress("parsing", candidates.size, parsed, failed)
         }
         val tracks = parsedTracks.map { it.track }
 
         dao.deleteTracksBySource(SourceType.MEDIA_STORE)
+        dao.deleteTracksBySource(SourceType.SAF)
         tracks.forEach { dao.upsertTrack(it) }
 
         val albums = mutableListOf<AlbumEntity>()
@@ -118,6 +140,7 @@ class LibraryScanner(
         dao.clearAlbumsAndArtists()
         albums.forEach { dao.upsertAlbum(it) }
         artists.forEach { dao.upsertArtist(it) }
+        _progress.value = ScanProgress("done", candidates.size, parsed, failed)
         return ScanStats(candidates.size, parsed, failed, albums.size, artists.size)
     }
 

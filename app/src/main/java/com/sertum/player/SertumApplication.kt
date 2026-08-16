@@ -18,6 +18,7 @@ import com.sertum.player.data.db.SertumDatabase
 import com.sertum.player.data.diagnostics.DiagnosticLevel
 import com.sertum.player.data.diagnostics.DiagnosticsStore
 import com.sertum.player.data.scan.LibraryScanner
+import com.sertum.player.data.scan.SafDirectoryStore
 import com.sertum.player.data.scan.ScanStats
 import com.sertum.player.domain.playback.RoomResumePositionStore
 import com.sertum.player.ui.imaging.buildSertumImageLoader
@@ -96,12 +97,14 @@ class SertumApplication : Application() {
 
     val coverStore: CoverStore by lazy { CoverStore(filesDir) }
 
+    val safDirectoryStore: SafDirectoryStore by lazy { SafDirectoryStore(this) }
+
     val diagnosticsStore: DiagnosticsStore by lazy {
         DiagnosticsStore(File(filesDir, "diagnostics"))
     }
 
     val libraryScanner: LibraryScanner by lazy {
-        LibraryScanner(this, database.libraryDao(), coverStore)
+        LibraryScanner(this, database.libraryDao(), coverStore, safDirectoryStore)
     }
 
     private val resumeStore: RoomResumePositionStore by lazy {

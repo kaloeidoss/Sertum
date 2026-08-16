@@ -29,7 +29,9 @@ fun MainTabs(
 
     LaunchedEffect(selectedTab) {
         if (pagerState.settledPage != selectedTab) {
-            pagerState.animateScrollToPage(selectedTab)
+            // Instant on tab taps (short presses must register); swiping
+            // between pages keeps its natural gesture animation.
+            pagerState.scrollToPage(selectedTab)
         }
     }
     LaunchedEffect(pagerState) {
