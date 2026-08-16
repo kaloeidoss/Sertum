@@ -2,6 +2,7 @@ package com.sertum.player.audio
 
 import android.content.Context
 import android.content.Intent
+import android.media.AudioManager
 import android.net.Uri
 import androidx.media3.common.C
 import androidx.media3.common.Format
@@ -70,6 +71,7 @@ class PlaybackCoordinator(
 ) {
 
     private val appContext = context.applicationContext
+    private val audioManager = appContext.getSystemService(Context.AUDIO_SERVICE) as AudioManager
     private val scope = CoroutineScope(SupervisorJob() + Dispatchers.Main.immediate)
     private val queue = QueueEngine()
     private val errorPolicy = PlaybackErrorPolicy()
@@ -159,7 +161,7 @@ class PlaybackCoordinator(
         }
         scope.launch {
             while (isActive) {
-                if (player.isPlaying) updateUiState()
+                if (player.isPlaying || _outputMode.value == OutputMode.USB_EXCLUSIVE) updateUiState()
                 delay(POSITION_POLL_MS)
             }
         }
@@ -386,9 +388,27 @@ class PlaybackCoordinator(
 
     private fun bitPerfectState(): BitPerfectState = when (displayOutputMode()) {
         OutputMode.USB_EXCLUSIVE ->
-            if (exclusiveBackend.capabilities.isExclusive) BitPerfectState.INTACT
-            else BitPerfectState.DEGRADED
+            if (
+                exclusiveBackend.capabilities.isExclusive &&
+                systemMusicVolume01() >= 1f
+            ) {
+                BitPerfectState.INTACT
+            } else {
+                BitPerfectState.DEGRADED
+            }
         else -> BitPerfectState.NOT_APPLICABLE
+    }
+
+    /**
+     * System MUSIC stream volume as a 0..1 fraction. AAudio EXCLUSIVE is
+     * still attenuated by the system music volume (device evidence
+     * docs/evidence/m4-r1/volume-*.txt), so per the 2026-08-16 user decision
+     * the USB badge turns yellow whenever it is below 100%.
+     */
+    private fun systemMusicVolume01(): Float {
+        val max = audioManager.getStreamMaxVolume(AudioManager.STREAM_MUSIC)
+        if (max <= 0) return 1f
+        return audioManager.getStreamVolume(AudioManager.STREAM_MUSIC).toFloat() / max
     }
 
     private fun updateUiState() {

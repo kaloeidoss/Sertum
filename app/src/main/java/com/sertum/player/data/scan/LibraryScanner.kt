@@ -41,8 +41,12 @@ class LibraryScanner(
 
     private data class ParsedTrack(
         val track: TrackEntity,
-        val embeddedPicture: ByteArray?,
         val folderPath: String,
+    )
+
+    private data class ParseResult(
+        val parsed: ParsedTrack?,
+        val embeddedPicture: ByteArray?,
     )
 
     fun scanNow(onDone: (Result<ScanStats>) -> Unit = {}) {
@@ -56,13 +60,25 @@ class LibraryScanner(
         var parsed = 0
         var failed = 0
         val parsedTracks = mutableListOf<ParsedTrack>()
+        // Keep at most one extracted cover per album. Storing every track's
+        // embedded picture while scanning a large library exhausts the heap.
+        val embeddedPaths = mutableMapOf<String, String?>()
+        val embeddedAttempted = mutableSetOf<String>()
         for (candidate in candidates) {
-            val parsedTrack = runCatching { parse(candidate) }.getOrNull()
+            val result = runCatching { parse(candidate, embeddedAttempted) }.getOrNull()
+            val parsedTrack = result?.parsed
             if (parsedTrack == null) {
                 failed += 1
             } else {
                 parsedTracks += parsedTrack
                 parsed += 1
+                val albumKey = parsedTrack.track.albumKey
+                result.embeddedPicture?.let { picture ->
+                    if (albumKey !in embeddedPaths) {
+                        embeddedPaths[albumKey] =
+                            runCatching { coverStore.saveEmbedded(albumKey, picture) }.getOrNull()
+                    }
+                }
             }
         }
         val tracks = parsedTracks.map { it.track }
@@ -74,9 +90,7 @@ class LibraryScanner(
         for ((key, rows) in parsedTracks.groupBy { it.track.albumKey }) {
             val first = rows.first()
             val folderCover = resolveFolderCover(first.folderPath)
-            val embeddedPath = rows.firstNotNullOfOrNull { it.embeddedPicture }?.let { picture ->
-                runCatching { coverStore.saveEmbedded(key, picture) }.getOrNull()
-            }
+            val embeddedPath = embeddedPaths[key]
             val userCover = dao.coverForAlbum(key)?.userCoverPath
             val resolved = CoverResolver.resolve(userCover, embeddedPath, folderCover).reference
             albums += AlbumEntity(
@@ -116,7 +130,7 @@ class LibraryScanner(
             ?.absolutePath
     }
 
-    private fun parse(candidate: ScanCandidate): ParsedTrack? {
+    private fun parse(candidate: ScanCandidate, embeddedAttempted: MutableSet<String>): ParseResult {
         val retriever = MediaMetadataRetriever()
         return try {
             retriever.setDataSource(context, Uri.parse(candidate.uri))
@@ -141,7 +155,11 @@ class LibraryScanner(
             }.getOrNull()
             val mimeType = retriever.extractMetadata(MediaMetadataRetriever.METADATA_KEY_MIMETYPE)
                 ?: "audio/*"
-            val embeddedPicture = runCatching { retriever.embeddedPicture }.getOrNull()
+            val embeddedPicture = if (embeddedAttempted.add(albumKey.key)) {
+                runCatching { retriever.embeddedPicture }.getOrNull()
+            } else {
+                null
+            }
             val track = TrackEntity(
                 id = candidate.uri.hashCode().toLong(),
                 uri = candidate.uri,
@@ -162,9 +180,12 @@ class LibraryScanner(
                 coverRef = null,
                 isPlayable = true,
             )
-            ParsedTrack(track, embeddedPicture, candidate.path.substringBeforeLast('/', ""))
+            ParseResult(
+                parsed = ParsedTrack(track, candidate.path.substringBeforeLast('/', "")),
+                embeddedPicture = embeddedPicture,
+            )
         } catch (_: Exception) {
-            null
+            ParseResult(parsed = null, embeddedPicture = null)
         } finally {
             runCatching { retriever.release() }
         }
