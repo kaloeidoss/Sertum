@@ -2,6 +2,7 @@ package com.sertum.player.audio.backend
 
 import androidx.media3.common.C
 import androidx.media3.common.Format
+import androidx.media3.common.util.UnstableApi
 import androidx.media3.exoplayer.audio.DefaultAudioSink
 import com.sertum.player.domain.playback.AudioOutputBackend
 import com.sertum.player.domain.playback.BackendCapabilities
@@ -12,6 +13,7 @@ import java.nio.ByteBuffer
  * System audio path (speaker / wired / Bluetooth).
  * Bit-perfect is NOT promised on this path (PRD 7.2).
  */
+@OptIn(UnstableApi::class)
 class StandardBackend : AudioOutputBackend {
 
     override val capabilities = BackendCapabilities(supportsHardwareVolume = false, isExclusive = false)
