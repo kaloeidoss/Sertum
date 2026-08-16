@@ -53,6 +53,7 @@
     <string name="settings_full_scan_on">已授权所有文件访问</string>
     <string name="settings_full_scan_off">默认关闭；仅手动开启</string>
     <string name="settings_add_folder">添加音乐文件夹（SAF）</string>
+    <string name="settings_rescan">重新扫描曲库</string>
     <string name="settings_output_mode">输出模式</string>
     <string name="settings_output_auto_standard">自动 / 常规</string>
     <string name="settings_output_usb_exclusive">USB 独占</string>

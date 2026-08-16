@@ -87,6 +87,12 @@ fun SettingsScreen() {
         OutlinedButton(onClick = { treeLauncher.launch(null) }, modifier = Modifier.padding(top = 8.dp)) {
             Text(stringResource(R.string.settings_add_folder))
         }
+        OutlinedButton(
+            onClick = { app.requestLibraryScan() },
+            modifier = Modifier.padding(top = 8.dp),
+        ) {
+            Text(stringResource(R.string.settings_rescan))
+        }
 
         SectionTitle(stringResource(R.string.settings_output_mode))
         listOf(

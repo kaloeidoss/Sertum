@@ -54,6 +54,7 @@
     <string name="settings_full_scan_on">All files access enabled</string>
     <string name="settings_full_scan_off">Off by default; opt-in only</string>
     <string name="settings_add_folder">Add music folder (SAF)</string>
+    <string name="settings_rescan">Rescan library</string>
     <string name="settings_output_mode">Output mode</string>
     <string name="settings_output_auto_standard">Auto / standard</string>
     <string name="settings_output_usb_exclusive">USB exclusive</string>

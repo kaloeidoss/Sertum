@@ -55,6 +55,17 @@ interface LibraryDao {
     @Query("DELETE FROM tracks WHERE source = :source")
     suspend fun deleteTracksBySource(source: SourceType)
 
+    @Query("DELETE FROM albums")
+    suspend fun clearAlbumsAndArtistsAlbums()
+
+    @Query("DELETE FROM artists")
+    suspend fun clearAlbumsAndArtistsArtists()
+
+    suspend fun clearAlbumsAndArtists() {
+        clearAlbumsAndArtistsAlbums()
+        clearAlbumsAndArtistsArtists()
+    }
+
     @Query("DELETE FROM tracks WHERE uri NOT IN (:uris)")
     suspend fun deleteTracksNotIn(uris: List<String>)
 

@@ -123,6 +123,7 @@ val coreCoverageExcludes = listOf(
     "**/data/scan/MediaStoreSource*",
     "**/data/scan/SafSource*",
     "**/data/scan/FullScanSource*",
+    "**/data/scan/LibraryScanner*",
     "**/data/covers/CoverStore*",
 )
 

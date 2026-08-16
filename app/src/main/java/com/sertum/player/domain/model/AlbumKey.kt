@@ -5,6 +5,9 @@ package com.sertum.player.domain.model
  * (Album Title, Album Artist) -> (Album Title, Artist) -> folder path fallback.
  */
 data class AlbumKey(val title: String, val albumArtist: String) {
+    /** Stable string used as the Room albumKey primary key. */
+    val key: String get() = "$albumArtist|$title"
+
     companion object {
         fun resolve(
             title: String?,
