@@ -2,6 +2,10 @@
 <manifest xmlns:android="http://schemas.android.com/apk/res/android">
 
     <!-- Offline boundary: no permissions at all. INTERNET is intentionally absent. -->
+    <uses-feature
+        android:name="android.hardware.usb.host"
+        android:required="false" />
+
     <application
         android:allowBackup="false"
         android:label="@string/app_name"
@@ -16,6 +20,14 @@
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
         </activity>
+
+        <activity
+            android:name=".spike1.Spike1Activity"
+            android:exported="false" />
+
+        <activity
+            android:name=".spike2.Spike2Activity"
+            android:exported="false" />
     </application>
 
 </manifest>
