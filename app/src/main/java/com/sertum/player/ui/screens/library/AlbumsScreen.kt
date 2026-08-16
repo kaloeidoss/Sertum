@@ -12,6 +12,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.grid.GridCells
 import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
 import androidx.compose.foundation.lazy.grid.items
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Text
@@ -23,8 +24,10 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import com.sertum.player.R
 import com.sertum.player.SertumApplication
@@ -67,10 +70,10 @@ fun AlbumsScreen(onAlbumClick: (String) -> Unit = {}) {
             EmptyLibrary(stringResource(R.string.nav_albums))
         } else {
             LazyVerticalGrid(
-                columns = GridCells.Fixed(2),
-                modifier = Modifier.fillMaxSize().padding(12.dp),
-                horizontalArrangement = Arrangement.spacedBy(12.dp),
-                verticalArrangement = Arrangement.spacedBy(16.dp),
+                columns = GridCells.Fixed(4),
+                modifier = Modifier.fillMaxSize().padding(8.dp),
+                horizontalArrangement = Arrangement.spacedBy(8.dp),
+                verticalArrangement = Arrangement.spacedBy(12.dp),
             ) {
                 items(visible, key = { it.albumKey }) { album ->
                     AlbumCard(album, onClick = { onAlbumClick(album.albumKey) })
@@ -91,6 +94,7 @@ fun AlbumCard(album: AlbumEntity, onClick: () -> Unit = {}) {
             Modifier
                 .fillMaxWidth()
                 .aspectRatio(1f)
+                .clip(RoundedCornerShape(12.dp))
                 .background(SurfaceBlack, MaterialTheme.shapes.medium),
             contentAlignment = Alignment.Center,
         ) {
@@ -98,7 +102,8 @@ fun AlbumCard(album: AlbumEntity, onClick: () -> Unit = {}) {
                 AsyncImage(
                     model = album.coverRef,
                     contentDescription = null,
-                    modifier = Modifier.fillMaxSize(),
+                    modifier = Modifier.fillMaxSize().clip(RoundedCornerShape(12.dp)),
+                    contentScale = androidx.compose.ui.layout.ContentScale.Crop,
                 )
             } else {
                 Text(
@@ -110,13 +115,17 @@ fun AlbumCard(album: AlbumEntity, onClick: () -> Unit = {}) {
         }
         Text(
             text = album.title,
-            style = MaterialTheme.typography.titleMedium,
-            modifier = Modifier.padding(top = 8.dp),
+            style = MaterialTheme.typography.titleSmall,
+            maxLines = 1,
+            overflow = TextOverflow.Ellipsis,
+            modifier = Modifier.padding(top = 6.dp),
         )
         Text(
             text = album.albumArtist,
-            style = MaterialTheme.typography.bodyMedium,
+            style = MaterialTheme.typography.bodySmall,
             color = MaterialTheme.colorScheme.onSurfaceVariant,
+            maxLines = 1,
+            overflow = TextOverflow.Ellipsis,
         )
     }
 }

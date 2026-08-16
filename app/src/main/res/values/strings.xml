@@ -37,6 +37,7 @@
     <string name="cd_previous">Previous</string>
     <string name="cd_next">Next</string>
     <string name="cd_queue">Queue</string>
+    <string name="cd_back_to_player">Back to player</string>
     <string name="cd_move_up">Move up</string>
     <string name="cd_move_down">Move down</string>
     <string name="cd_remove">Remove</string>

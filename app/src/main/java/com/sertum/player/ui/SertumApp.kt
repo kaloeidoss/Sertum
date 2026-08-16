@@ -1,5 +1,7 @@
 package com.sertum.player.ui
 
+import androidx.compose.animation.EnterTransition
+import androidx.compose.animation.ExitTransition
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxHeight
@@ -46,8 +48,7 @@ import com.sertum.player.ui.navigation.SertumDestinations
 import com.sertum.player.ui.screens.library.AlbumDetailScreen
 import com.sertum.player.ui.screens.library.ArtistDetailScreen
 import com.sertum.player.ui.screens.nowplaying.MiniPlayer
-import com.sertum.player.ui.screens.nowplaying.NowPlayingScreen
-import com.sertum.player.ui.screens.nowplaying.QueueScreen
+import com.sertum.player.ui.screens.nowplaying.NowPlayingHost
 import com.sertum.player.ui.theme.SertumTheme
 
 private data class TopLevelDestination(
@@ -89,8 +90,8 @@ fun SertumApp() {
             snackbarHost = { SnackbarHost(snackbarHostState) },
             bottomBar = {
                 // The mini player stays on every browsing surface; the full
-                // player and the queue are full-screen surfaces of their own.
-                if (currentRoute != SertumDestinations.QUEUE && !showNowPlaying) {
+                // player is a full-screen bottom sheet of its own.
+                if (!showNowPlaying) {
                     Column {
                         MiniPlayer(onExpand = { showNowPlaying = true })
                         NavigationBar(containerColor = MaterialTheme.colorScheme.surface) {
@@ -126,6 +127,10 @@ fun SertumApp() {
                 navController = navController,
                 startDestination = SertumDestinations.MAIN,
                 modifier = Modifier.padding(padding),
+                enterTransition = { EnterTransition.None },
+                exitTransition = { ExitTransition.None },
+                popEnterTransition = { EnterTransition.None },
+                popExitTransition = { ExitTransition.None },
             ) {
                 composable(SertumDestinations.MAIN) {
                     MainTabs(
@@ -150,7 +155,6 @@ fun SertumApp() {
                         onAlbumClick = { key -> navController.navigate(SertumDestinations.albumDetail(key)) },
                     )
                 }
-                composable(SertumDestinations.QUEUE) { QueueScreen() }
             }
         }
 
@@ -160,12 +164,7 @@ fun SertumApp() {
                 sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true),
             ) {
                 Box(Modifier.fillMaxHeight(0.94f)) {
-                    NowPlayingScreen(
-                        onOpenQueue = {
-                            showNowPlaying = false
-                            navController.navigate(SertumDestinations.QUEUE)
-                        },
-                    )
+                    NowPlayingHost()
                 }
             }
         }

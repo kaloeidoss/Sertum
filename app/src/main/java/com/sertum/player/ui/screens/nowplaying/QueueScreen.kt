@@ -1,6 +1,5 @@
 package com.sertum.player.ui.screens.nowplaying
 
-import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
@@ -12,6 +11,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ArrowDownward
 import androidx.compose.material.icons.filled.ArrowUpward
 import androidx.compose.material.icons.filled.Close
+import androidx.compose.material.icons.filled.KeyboardArrowDown
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
@@ -29,26 +29,51 @@ import com.sertum.player.R
 import com.sertum.player.SertumApplication
 import com.sertum.player.ui.playback.PlaybackStateHolder
 
+/**
+ * Queue management layer. When hosted inside the full player it slides up
+ * over the player and [onBack] slides it back down; standalone usage keeps
+ * [onBack] null.
+ */
 @Composable
-fun QueueScreen() {
+fun QueueScreen(onBack: (() -> Unit)? = null) {
     val state by PlaybackStateHolder.state.collectAsState()
     val controller = (LocalContext.current.applicationContext as SertumApplication).playbackController
-    if (state.queue.isEmpty()) {
-        Text(
-            text = stringResource(R.string.queue_empty),
-            style = MaterialTheme.typography.bodyLarge,
-            color = MaterialTheme.colorScheme.onSurfaceVariant,
-            modifier = Modifier.fillMaxSize().padding(24.dp),
-        )
-        return
-    }
+
     Column(Modifier.fillMaxSize()) {
-        OutlinedButton(
-            onClick = { controller.clearQueue() },
-            modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp),
+        Row(
+            Modifier.fillMaxWidth().padding(start = 8.dp, end = 16.dp, top = 8.dp),
+            verticalAlignment = Alignment.CenterVertically,
         ) {
-            Text(stringResource(R.string.clear_queue))
+            if (onBack != null) {
+                IconButton(onClick = onBack) {
+                    Icon(
+                        Icons.Filled.KeyboardArrowDown,
+                        contentDescription = stringResource(R.string.cd_back_to_player),
+                    )
+                }
+            }
+            Text(
+                text = stringResource(R.string.cd_queue),
+                style = MaterialTheme.typography.titleLarge,
+                modifier = Modifier.weight(1f),
+            )
+            if (state.queue.isNotEmpty()) {
+                OutlinedButton(onClick = { controller.clearQueue() }) {
+                    Text(stringResource(R.string.clear_queue))
+                }
+            }
         }
+
+        if (state.queue.isEmpty()) {
+            Text(
+                text = stringResource(R.string.queue_empty),
+                style = MaterialTheme.typography.bodyLarge,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                modifier = Modifier.fillMaxSize().padding(24.dp),
+            )
+            return@Column
+        }
+
         LazyColumn(Modifier.fillMaxSize()) {
             itemsIndexed(state.queue) { index, title ->
                 Row(
