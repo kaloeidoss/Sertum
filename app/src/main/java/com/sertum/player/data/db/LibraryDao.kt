@@ -46,6 +46,9 @@ interface LibraryDao {
     @Query("SELECT * FROM covers WHERE albumKey = :albumKey")
     suspend fun coverForAlbum(albumKey: String): CoverEntity?
 
+    @Query("UPDATE albums SET coverRef = :coverRef WHERE albumKey = :albumKey")
+    suspend fun setAlbumCover(albumKey: String, coverRef: String?)
+
     @Query("DELETE FROM covers WHERE albumKey = :albumKey")
     suspend fun deleteCover(albumKey: String)
 

@@ -45,7 +45,22 @@ fun SongsScreen() {
             modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 8.dp),
         )
         if (visible.isEmpty()) {
-            EmptyLibrary("Songs")
+            val context = LocalContext.current
+            val granted = hasMediaPermission(context)
+            EmptyLibrary(
+                label = "Songs",
+                actionText = if (granted) null else "Open app settings",
+                onAction = if (granted) null else {
+                    {
+                        context.startActivity(
+                            android.content.Intent(
+                                android.provider.Settings.ACTION_APPLICATION_DETAILS_SETTINGS,
+                                android.net.Uri.parse("package:${context.packageName}"),
+                            ),
+                        )
+                    }
+                },
+            )
         } else {
             LazyColumn(Modifier.fillMaxSize()) {
                 items(visible, key = { it.id }) { track ->
@@ -88,6 +103,15 @@ fun TrackRow(track: TrackEntity) {
             style = MaterialTheme.typography.labelMedium,
             color = MaterialTheme.colorScheme.onSurfaceVariant,
         )
+    }
+}
+
+private fun hasMediaPermission(context: android.content.Context): Boolean {
+    val granted = android.content.pm.PackageManager.PERMISSION_GRANTED
+    return if (android.os.Build.VERSION.SDK_INT >= 33) {
+        context.checkSelfPermission(android.Manifest.permission.READ_MEDIA_AUDIO) == granted
+    } else {
+        context.checkSelfPermission(android.Manifest.permission.READ_EXTERNAL_STORAGE) == granted
     }
 }
 
