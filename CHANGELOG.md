@@ -2,6 +2,14 @@
 
 Human-readable iteration notes for the public repository. Fine-grained history lives in commit messages.
 
+## 2026-08-16 — M2 audio core
+
+- AudioOutputBackend contract, BitPerfectState and volume policy with unit tests.
+- Media3 1.11 playback engine, StandardBackend, custom AIFF extractor (16/24/32-bit PCM).
+- Queue engine (repeat/shuffle/remove/move), resume position store, playback coordinator with gapless queue and sample-rate hooks.
+- Production native AAudio EXCLUSIVE backend; device smoke passed 8/8 (16/24-bit × 4 sample rates, zero mismatches).
+- Gapless smoke: same-rate transitions near-seamless; sample-rate reconfiguration latency on the standard path is tracked as a follow-up before the bit-perfect acceptance gate.
+
 ## 2026-08-16 — M1 USB-exclusive spike
 
 - Built and ran Spike-1 (Java AudioTrack + native AAudio) and Spike-2 (UAC2 takeover probe) on the reference device.
