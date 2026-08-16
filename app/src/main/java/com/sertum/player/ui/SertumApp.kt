@@ -14,12 +14,16 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
+import androidx.navigation.NavType
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
+import androidx.navigation.navArgument
 import com.sertum.player.ui.navigation.SertumDestinations
+import com.sertum.player.ui.screens.library.AlbumDetailScreen
 import com.sertum.player.ui.screens.library.AlbumsScreen
+import com.sertum.player.ui.screens.library.ArtistDetailScreen
 import com.sertum.player.ui.screens.library.ArtistsScreen
 import com.sertum.player.ui.screens.library.SongsScreen
 import com.sertum.player.ui.screens.settings.SettingsScreen
@@ -71,9 +75,28 @@ fun SertumApp() {
             modifier = Modifier.padding(padding),
         ) {
             composable(SertumDestinations.SONGS) { SongsScreen() }
-            composable(SertumDestinations.ALBUMS) { AlbumsScreen() }
-            composable(SertumDestinations.ARTISTS) { ArtistsScreen() }
+            composable(SertumDestinations.ALBUMS) {
+                AlbumsScreen(onAlbumClick = { key -> navController.navigate(SertumDestinations.albumDetail(key)) })
+            }
+            composable(SertumDestinations.ARTISTS) {
+                ArtistsScreen(onArtistClick = { name -> navController.navigate(SertumDestinations.artistDetail(name)) })
+            }
             composable(SertumDestinations.SETTINGS) { SettingsScreen() }
+            composable(
+                SertumDestinations.ALBUM_DETAIL,
+                arguments = listOf(navArgument("albumKey") { type = NavType.StringType }),
+            ) { entry ->
+                AlbumDetailScreen(albumKey = entry.arguments?.getString("albumKey").orEmpty())
+            }
+            composable(
+                SertumDestinations.ARTIST_DETAIL,
+                arguments = listOf(navArgument("artistName") { type = NavType.StringType }),
+            ) { entry ->
+                ArtistDetailScreen(
+                    artistName = entry.arguments?.getString("artistName").orEmpty(),
+                    onAlbumClick = { key -> navController.navigate(SertumDestinations.albumDetail(key)) },
+                )
+            }
         }
     }
 }
