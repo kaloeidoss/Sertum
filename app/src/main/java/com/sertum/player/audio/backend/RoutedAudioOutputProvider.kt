@@ -42,9 +42,15 @@ class RoutedAudioOutputProvider(context: Context) :
             !isRawPcm ->
                 androidx.media3.exoplayer.audio.AudioOutputProvider.FORMAT_UNSUPPORTED
             formatConfig.format.pcmEncoding == C.ENCODING_PCM_16BIT ||
-                formatConfig.format.pcmEncoding == C.ENCODING_PCM_24BIT ||
-                formatConfig.format.pcmEncoding == C.ENCODING_PCM_FLOAT ->
+                formatConfig.format.pcmEncoding == C.ENCODING_PCM_24BIT ->
                 androidx.media3.exoplayer.audio.AudioOutputProvider.FORMAT_SUPPORTED_DIRECTLY
+            // Float is produced by Media3's own processing pipeline for
+            // 24/32-bit PCM. Returning WITH_TRANSCODING here prevents the
+            // renderer from forcing decoders into float output, so 16-bit
+            // sources keep their native depth; the float pipeline still
+            // reaches getOutputConfig and is packed back to 24-bit.
+            formatConfig.format.pcmEncoding == C.ENCODING_PCM_FLOAT ->
+                androidx.media3.exoplayer.audio.AudioOutputProvider.FORMAT_SUPPORTED_WITH_TRANSCODING
             else ->
                 androidx.media3.exoplayer.audio.AudioOutputProvider.FORMAT_UNSUPPORTED
         }

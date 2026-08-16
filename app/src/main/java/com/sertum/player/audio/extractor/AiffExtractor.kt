@@ -120,6 +120,7 @@ class AiffExtractor : Extractor {
                 }
                 val durationUs = frameCount * 1_000_000L / sampleRate
                 out.seekMap(SeekMap.Unseekable(durationUs))
+                out.endTracks()
             }
 
             "SSND" -> {

@@ -9,6 +9,7 @@ import androidx.media3.common.util.UnstableApi
 import androidx.media3.exoplayer.DefaultRenderersFactory
 import androidx.media3.exoplayer.ExoPlayer
 import androidx.media3.exoplayer.source.DefaultMediaSourceFactory
+import com.sertum.player.audio.backend.PreferHardwareCodecSelector
 import com.sertum.player.audio.backend.RoutedAudioOutputProvider
 import com.sertum.player.audio.extractor.SertumExtractorsFactory
 
@@ -26,6 +27,7 @@ class PlayerEngine(context: Context) {
 
     private val renderersFactory = DefaultRenderersFactory(context)
         .setEnableAudioFloatOutput(true)
+        .setMediaCodecSelector(PreferHardwareCodecSelector)
 
     val player: ExoPlayer = ExoPlayer.Builder(context, renderersFactory)
         .setMediaSourceFactory(
