@@ -152,8 +152,10 @@ class AiffExtractor : Extractor {
         if (block <= 0) return Extractor.RESULT_END_OF_INPUT
         val read: Int = if (bytesPerSample > 1) {
             // AIFF PCM is big-endian; Media3 PCM is little-endian.
-            // Feed through a DataReader that byte-swaps on read so the
-            // int-returning sampleData overload still reports bytes consumed.
+            // Feed through a DataReader that byte-swaps on read. TrackOutput
+            // may perform short reads, so loop until a whole frame-aligned
+            // block is appended; sampleMetadata must never describe partial
+            // frames (Media3's float pipeline requires whole samples).
             val swappedReader = object : DataReader {
                 override fun read(buffer: ByteArray, offset: Int, length: Int): Int {
                     val read = input.read(buffer, offset, length)
@@ -161,7 +163,13 @@ class AiffExtractor : Extractor {
                     return read
                 }
             }
-            out.sampleData(swappedReader, block, false)
+            var totalRead = 0
+            while (totalRead < block) {
+                val appended = out.sampleData(swappedReader, block - totalRead, false)
+                if (appended <= 0) break
+                totalRead += appended
+            }
+            if (totalRead == 0) Extractor.RESULT_END_OF_INPUT else totalRead - (totalRead % alignTo)
         } else {
             out.sampleData(input, block, false)
         }
