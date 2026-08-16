@@ -77,6 +77,8 @@ class BackendSmokeActivity : ComponentActivity() {
                 bytes[off + 3] = bytes[off + 1]
             }
         }
-        return backend.writePcm(bytes, 0, bytes.size).isSuccess
+        val writtenFrames = backend.writePcm(bytes, 0, bytes.size).getOrNull() ?: -1
+        Log.i("SertumSmoke", "tone rate=$rate bits=$bits writtenFrames=$writtenFrames expected=$frames")
+        return writtenFrames == frames
     }
 }

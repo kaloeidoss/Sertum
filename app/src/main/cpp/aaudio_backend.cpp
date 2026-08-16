@@ -90,8 +90,11 @@ Java_com_sertum_player_audio_backend_AaudioNative_nativeWrite(
     while (framesWritten < frames) {
         const aaudio_result_t w = AAudioStream_write(
             stream, reinterpret_cast<const void *>(buf + offset + framesWritten * frameBytes),
-            frames - framesWritten, 0);
-        if (w < 0) {
+            frames - framesWritten, 20 * 1000 * 1000);
+        if (w <= 0) {
+            // A short timeout lets the HAL drain a burst before we report
+            // backpressure; a 0-frame result is returned to the Java side so
+            // Media3 retries instead of busy-looping.
             framesWritten = framesWritten == 0 ? static_cast<int>(w) : framesWritten;
             break;
         }

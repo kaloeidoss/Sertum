@@ -19,8 +19,10 @@ class StandardBackend : AudioOutputBackend {
     override val capabilities = BackendCapabilities(supportsHardwareVolume = false, isExclusive = false)
 
     private var sink: DefaultAudioSink? = null
+    private var spec: StreamSpec? = null
 
     override fun open(spec: StreamSpec): Result<Unit> = runCatching {
+        this.spec = spec
         val built = DefaultAudioSink.Builder()
             .setEnableFloatOutput(true)
             .build()
@@ -34,9 +36,16 @@ class StandardBackend : AudioOutputBackend {
         sink = built
     }
 
-    override fun writePcm(frame: ByteArray, offset: Int, length: Int): Result<Unit> = runCatching {
+    override fun writePcm(frame: ByteArray, offset: Int, length: Int): Result<Int> = runCatching {
         val current = sink ?: error("backend not open")
-        current.handleBuffer(ByteBuffer.wrap(frame, offset, length), 0, 1)
+        val bytesPerFrame = when (spec?.bitDepth ?: 16) {
+            24 -> 6
+            else -> 4
+        }
+        val frames = length / bytesPerFrame
+        if (frames <= 0) return@runCatching 0
+        val consumed = current.handleBuffer(ByteBuffer.wrap(frame, offset, frames * bytesPerFrame), 0, 1)
+        if (consumed) frames else 0
     }
 
     override fun pause(): Result<Unit> = runCatching { sink?.pause() ?: Unit }
@@ -50,6 +59,7 @@ class StandardBackend : AudioOutputBackend {
     override fun release() {
         sink?.reset()
         sink = null
+        spec = null
     }
 
     override fun onVolumeChanged(volume01: Float) {

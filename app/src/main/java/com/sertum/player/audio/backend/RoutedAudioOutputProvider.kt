@@ -26,6 +26,15 @@ class RoutedAudioOutputProvider(context: Context) :
     var exclusiveEnabled: Boolean = false
 
     /**
+     * Mirrors ExoPlayer.playWhenReady (set by PlaybackCoordinator). The
+     * AAudio exclusive stream cannot be written before AAudioStream_requestStart;
+     * [BackendAudioOutput] uses this to lazily start the stream before the
+     * first PCM write instead of blocking forever.
+     */
+    @Volatile
+    var playWhenReady: Boolean = false
+
+    /**
      * Source bit depth of the last compressed format seen by
      * [getFormatSupport]. Media3 converts 24/32-bit decoded sources to float;
      * this side channel lets [BackendAudioOutput] pack float back to the
@@ -33,6 +42,15 @@ class RoutedAudioOutputProvider(context: Context) :
      */
     @Volatile
     private var pendingSourceBitDepth = 24
+
+    /**
+     * Mime type of the last non-raw source seen by [getFormatSupport].
+     * Media3 forces decoded output to float when the sink directly supports
+     * PCM_FLOAT; the Xiaomi 12S ALAC decoders reject that configuration, so
+     * ALAC is the one codec allowed to decode at its native depth.
+     */
+    @Volatile
+    private var pendingSourceMimeType: String? = null
 
     private val exclusiveOutputs = java.util.concurrent.CopyOnWriteArrayList<BackendAudioOutput>()
 
@@ -44,6 +62,7 @@ class RoutedAudioOutputProvider(context: Context) :
         if (!isExclusiveRoute()) return super.getFormatSupport(formatConfig)
         val pcmEncoding = formatConfig.format.pcmEncoding
         if (formatConfig.format.sampleMimeType != MimeTypes.AUDIO_RAW) {
+            pendingSourceMimeType = formatConfig.format.sampleMimeType
             when (pcmEncoding) {
                 C.ENCODING_PCM_16BIT -> pendingSourceBitDepth = 16
                 C.ENCODING_PCM_24BIT -> pendingSourceBitDepth = 24
@@ -58,9 +77,11 @@ class RoutedAudioOutputProvider(context: Context) :
         val level = when {
             !isRawPcm ->
                 androidx.media3.exoplayer.audio.AudioOutputProvider.FORMAT_UNSUPPORTED
-            pcmEncoding == C.ENCODING_PCM_16BIT ||
-                pcmEncoding == C.ENCODING_PCM_24BIT ||
-                pcmEncoding == C.ENCODING_PCM_FLOAT ->
+            pcmEncoding == C.ENCODING_PCM_16BIT || pcmEncoding == C.ENCODING_PCM_24BIT ->
+                androidx.media3.exoplayer.audio.AudioOutputProvider.FORMAT_SUPPORTED_DIRECTLY
+            pcmEncoding == C.ENCODING_PCM_FLOAT && pendingSourceMimeType == MimeTypes.AUDIO_ALAC ->
+                androidx.media3.exoplayer.audio.AudioOutputProvider.FORMAT_SUPPORTED_WITH_TRANSCODING
+            pcmEncoding == C.ENCODING_PCM_FLOAT ->
                 androidx.media3.exoplayer.audio.AudioOutputProvider.FORMAT_SUPPORTED_DIRECTLY
             else ->
                 androidx.media3.exoplayer.audio.AudioOutputProvider.FORMAT_UNSUPPORTED
@@ -105,8 +126,12 @@ class RoutedAudioOutputProvider(context: Context) :
             ?: throw androidx.media3.exoplayer.audio.AudioOutputProvider.InitializationException(
                 IllegalStateException("exclusive backend missing"),
             )
-        return BackendAudioOutput(backend, outputConfig, pendingSourceBitDepth)
-            .also { exclusiveOutputs.add(it) }
+        return BackendAudioOutput(
+            backend,
+            outputConfig,
+            pendingSourceBitDepth,
+            playWhenReady = { playWhenReady },
+        ).also { exclusiveOutputs.add(it) }
     }
 
     override fun release() {

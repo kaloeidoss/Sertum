@@ -105,11 +105,16 @@ class PlaybackCoordinator(
     init {
         engine.router.exclusiveBackend = exclusiveBackend
         engine.router.exclusiveEnabled = false
+        engine.router.playWhenReady = player.playWhenReady
 
         player.addListener(object : Player.Listener {
             override fun onIsPlayingChanged(isPlaying: Boolean) {
                 updateUiState()
                 if (!isPlaying && playlist.isNotEmpty()) saveResumePosition()
+            }
+
+            override fun onPlayWhenReadyChanged(playWhenReady: Boolean, reason: Int) {
+                engine.router.playWhenReady = playWhenReady
             }
 
             override fun onPlaybackStateChanged(playbackState: Int) {

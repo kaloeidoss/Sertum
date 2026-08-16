@@ -134,6 +134,7 @@ class DecoderContractTest {
             provider = RoutedAudioOutputProvider(context).apply {
                 exclusiveEnabled = true
                 exclusiveBackend = backend
+                playWhenReady = true
             }
             providers += provider!!
             val renderersFactory = androidx.media3.exoplayer.DefaultRenderersFactory(context)
@@ -219,12 +220,13 @@ class DecoderContractTest {
             return Result.success(Unit)
         }
 
-        override fun writePcm(frame: ByteArray, offset: Int, length: Int): Result<Unit> {
+        override fun writePcm(frame: ByteArray, offset: Int, length: Int): Result<Int> {
             totalBytes.addAndGet(length.toLong())
             val bytesPerSample = if (specs.lastOrNull()?.bitDepth == 24) 3 else 2
             val channels = specs.lastOrNull()?.channelCount ?: 2
-            totalFrames.addAndGet((length / (bytesPerSample * channels)).toLong())
-            return Result.success(Unit)
+            val frames = length / (bytesPerSample * channels)
+            totalFrames.addAndGet(frames.toLong())
+            return Result.success(frames)
         }
 
         override fun getPositionUs(): Long = totalFrames.get() * 1_000_000L / sampleRate

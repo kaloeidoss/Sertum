@@ -5,7 +5,14 @@ interface AudioOutputBackend {
     val capabilities: BackendCapabilities
 
     fun open(spec: StreamSpec): Result<Unit>
-    fun writePcm(frame: ByteArray, offset: Int, length: Int): Result<Unit>
+
+    /**
+     * Writes as many whole frames as the backend currently accepts and
+     * returns the number of frames written. 0 means "buffer full / stream
+     * not started"; callers must apply backpressure and retry, never
+     * busy-loop. Negative native errors are failures.
+     */
+    fun writePcm(frame: ByteArray, offset: Int, length: Int): Result<Int>
     fun pause(): Result<Unit>
     fun play(): Result<Unit>
     fun flush(): Result<Unit>

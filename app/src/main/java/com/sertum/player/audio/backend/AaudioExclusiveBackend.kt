@@ -30,7 +30,12 @@ class AaudioExclusiveBackend : AudioOutputBackend {
         private const val EXCLUSIVE = 1
     }
 
+    @Volatile
     private var handle = 0L
+
+    @Volatile
+    private var started = false
+
     private var spec: StreamSpec? = null
 
     override var capabilities = BackendCapabilities(supportsHardwareVolume = false, isExclusive = false)
@@ -41,6 +46,7 @@ class AaudioExclusiveBackend : AudioOutputBackend {
 
     override fun open(spec: StreamSpec): Result<Unit> {
         close()
+        started = false
         this.spec = spec
         val opened = AaudioNative.nativeOpen(spec.sampleRate, spec.channelCount, spec.bitDepth)
         if (opened == 0L) return Result.failure(IllegalStateException("AAudio open failed"))
@@ -64,32 +70,52 @@ class AaudioExclusiveBackend : AudioOutputBackend {
         return Result.success(Unit)
     }
 
-    override fun writePcm(frame: ByteArray, offset: Int, length: Int): Result<Unit> {
-        val written = AaudioNative.nativeWrite(handle, frame, offset, length)
+    override fun writePcm(frame: ByteArray, offset: Int, length: Int): Result<Int> {
         val bytesPerFrame = if (streamInfo.is24Bit) 6 else 4
         val expected = length / bytesPerFrame
-        return if (written == expected) {
+        val written = AaudioNative.nativeWrite(handle, frame, offset, length)
+        if (written < 0) {
+            return Result.failure(IllegalStateException("AAudio write failed res=$written expected=$expected"))
+        }
+        return Result.success(written.coerceAtMost(expected))
+    }
+
+    override fun pause(): Result<Unit> {
+        if (!started) return Result.success(Unit)
+        return if (AaudioNative.nativePause(handle)) {
+            started = false
+            Log.i(TAG, "paused handle=$handle")
             Result.success(Unit)
         } else {
-            Result.failure(IllegalStateException("AAudio write frames=$written expected=$expected"))
+            Result.failure(IllegalStateException("AAudio pause failed"))
         }
     }
 
-    override fun pause(): Result<Unit> =
-        if (AaudioNative.nativePause(handle)) Result.success(Unit)
-        else Result.failure(IllegalStateException("AAudio pause failed"))
-
-    override fun play(): Result<Unit> =
-        if (AaudioNative.nativeStart(handle)) Result.success(Unit)
-        else Result.failure(IllegalStateException("AAudio start failed"))
+    override fun play(): Result<Unit> {
+        if (started) return Result.success(Unit)
+        return if (AaudioNative.nativeStart(handle)) {
+            started = true
+            Log.i(TAG, "started handle=$handle")
+            Result.success(Unit)
+        } else {
+            Result.failure(IllegalStateException("AAudio start failed"))
+        }
+    }
 
     override fun flush(): Result<Unit> =
         if (AaudioNative.nativeFlush(handle)) Result.success(Unit)
         else Result.failure(IllegalStateException("AAudio flush failed"))
 
-    override fun stop(): Result<Unit> =
-        if (AaudioNative.nativeStop(handle)) Result.success(Unit)
-        else Result.failure(IllegalStateException("AAudio stop failed"))
+    override fun stop(): Result<Unit> {
+        if (!started) return Result.success(Unit)
+        return if (AaudioNative.nativeStop(handle)) {
+            started = false
+            Log.i(TAG, "stopped handle=$handle")
+            Result.success(Unit)
+        } else {
+            Result.failure(IllegalStateException("AAudio stop failed"))
+        }
+    }
 
     override fun release() = close()
 
@@ -109,6 +135,7 @@ class AaudioExclusiveBackend : AudioOutputBackend {
         streamInfo.framesPerBurst.takeIf { it > 0 }?.times(2) ?: 0
 
     private fun close() {
+        started = false
         if (handle != 0L) {
             AaudioNative.nativeClose(handle)
             handle = 0L
