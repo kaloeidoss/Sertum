@@ -135,27 +135,37 @@ class Spike2Activity : ComponentActivity() {
             }
         }
 
-        val interfaceId = 0
-        val claimed = try {
-            conn.claimInterface(device.getInterface(interfaceId), true)
-        } catch (e: Exception) {
-            Log.w(TAG, "claimInterface threw: ${e.message}")
-            false
-        }
-        Log.i(TAG, "claimInterface(0) force=true -> $claimed")
+        // Claim every interface in turn (release immediately) and probe
+        // GET_INTERFACE / SET_INTERFACE where the device supports it.
+        for (i in 0 until device.interfaceCount) {
+            val intf = device.getInterface(i)
+            val claimed = try {
+                conn.claimInterface(intf, true)
+            } catch (e: Exception) {
+                Log.w(TAG, "claimInterface($i) threw: ${e.message}")
+                false
+            }
+            Log.i(TAG, "claimInterface($i) force=true -> $claimed")
+            if (!claimed) continue
 
-        if (claimed) {
-            // Android's UsbInterface API exposes no alternate-setting model, so we
-            // probe SET_INTERFACE blindly over a small alt range (read-only, no audio).
-            for (alt in 0..9) {
-                // SET_INTERFACE: bmRequestType=0x01 (OUT, interface), bRequest=11
+            val current = ByteArray(1)
+            val get = conn.controlTransfer(
+                UsbConstants.USB_DIR_IN or UsbConstants.USB_TYPE_CLASS,
+                10, 0, i, current, 1, 2000,
+            )
+            Log.i(TAG, "GET_INTERFACE($i) -> $get current=${current[0]}")
+
+            // Audio streaming interface on this DAC is interface 2 (5 alts);
+            // probe a small alt range regardless.
+            val altMax = if (i == 2) 5 else 3
+            for (alt in 0..altMax) {
                 val result = conn.controlTransfer(
                     UsbConstants.USB_TYPE_CLASS or UsbConstants.USB_DIR_OUT,
-                    11, alt, interfaceId, null, 0, 2000,
+                    11, alt, i, null, 0, 2000,
                 )
-                Log.i(TAG, "SET_INTERFACE alt=$alt -> $result (negative means failure)")
+                Log.i(TAG, "SET_INTERFACE($i) alt=$alt -> $result (negative means failure)")
             }
-            try { conn.releaseInterface(device.getInterface(interfaceId)) } catch (_: Exception) {}
+            try { conn.releaseInterface(intf) } catch (_: Exception) {}
         }
         conn.close()
         label.text = "Spike-2 done; see logcat SertumSpike"
